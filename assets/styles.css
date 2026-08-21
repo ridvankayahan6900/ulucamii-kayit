@@ -1698,7 +1698,7 @@ main {
 .tesekkur-tik{color:var(--accent,#1F4E4E);display:flex;justify-content:center;margin-bottom:1.25rem}
 .tesekkur h1{font-size:1.7rem;margin:0 0 .35rem}
 .tesekkur-alt{font-size:1.1rem;color:var(--muted,#6B6560);margin:0 0 1.75rem}
-.tesekkur-ref-et{font-family:ui-monospace,monospace;letter-spacing:.22em;font-size:.78rem;
+.tesekkur-ref-et{letter-spacing:.09em;font-size:.9rem;font-weight:600;
   color:var(--muted,#6B6560);text-transform:none;margin:0}
 .tesekkur .ref-number{font-size:2rem;margin:.35rem 0 1.25rem}
 .tesekkur-not{color:var(--muted,#6B6560);margin:0 auto 1.75rem;max-width:28rem}
