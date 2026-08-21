@@ -157,13 +157,17 @@
     placeholder.textContent = app.t('selectOne');
     select.append(placeholder);
 
-    [['fundamental', app.schools.fundamental], ['secondary', app.schools.secondary]].forEach(([key, schools]) => {
+    /* Once Marche-en-Famenne okullari, sonra cevre belediyeler. */
+    [['schoolsMarche', 'marche'], ['schoolsAround', 'cevre']].forEach(([anahtar, grup]) => {
+      const okullar = (app.schools || []).filter((okul) => okul.grup === grup);
+      if (!okullar.length) return;
       const group = document.createElement('optgroup');
-      group.label = app.t(key);
-      schools.forEach((school) => {
+      group.label = app.t(anahtar);
+      okullar.forEach((okul) => {
         const option = document.createElement('option');
-        option.value = school;
-        option.textContent = school;
+        option.value = okul.ad;
+        option.textContent = okul.ad;
+        option.dataset.tur = okul.tur;
         group.append(option);
       });
       select.append(group);
@@ -172,8 +176,59 @@
     const other = document.createElement('option');
     other.value = '__other__';
     other.textContent = `${app.t('otherSchool')} / Autre`;
+    other.dataset.tur = 'hepsi';
     select.append(other);
     select.value = [...select.options].some((option) => option.value === selected) ? selected : '';
+    renderClassLevels();
+  }
+
+  /* Secili okulun kademesi: fondamental | secondaire | hepsi | '' */
+  function okulTuru() {
+    const select = document.getElementById('school');
+    if (!select) return '';
+    const secenek = select.selectedOptions && select.selectedOptions[0];
+    if (!secenek || !secenek.value) return '';
+    return secenek.dataset.tur || 'hepsi';
+  }
+
+  /* Sinif listesi okulun kademesine gore doldurulur; deger Fransizca
+     resmi karsiligidir (ornek: 4e primaire) — okula ibraz edilebilsin diye. */
+  function renderClassLevels() {
+    const select = document.getElementById('classLevel');
+    if (!select || select.tagName !== 'SELECT') return;
+    const tur = okulTuru();
+    const secili = select.value || app.state.fields.classLevel || '';
+    select.replaceChildren();
+    if (!tur) {
+      const uyari = document.createElement('option');
+      uyari.value = '';
+      uyari.textContent = app.t('selectSchoolFirst');
+      select.append(uyari);
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
+    const bos = document.createElement('option');
+    bos.value = '';
+    bos.textContent = app.t('selectOne');
+    select.append(bos);
+    const kademeler = tur === 'hepsi' ? ['fondamental', 'secondaire'] : [tur];
+    kademeler.forEach((kademe) => {
+      const liste = (app.classLevels && app.classLevels[kademe]) || [];
+      if (!liste.length) return;
+      const cokKademe = kademeler.length > 1;
+      const hedef = cokKademe ? document.createElement('optgroup') : select;
+      if (cokKademe) hedef.label = app.t(kademe === 'fondamental' ? 'schoolLevelFondamental' : 'schoolLevelSecondaire');
+      liste.forEach((sinif) => {
+        const option = document.createElement('option');
+        option.value = sinif.fr;
+        option.textContent = app.lang === 'fr' ? sinif.fr : `${sinif.tr} (${sinif.fr})`;
+        hedef.append(option);
+      });
+      if (cokKademe) select.append(hedef);
+    });
+    select.value = [...select.options].some((option) => option.value === secili) ? secili : '';
+    app.state.fields.classLevel = select.value;
   }
 
   function renderContract() {
@@ -294,6 +349,7 @@
   function updateConditionalFields() {
     const schoolOther = app.state.fields.school === '__other__';
     toggleConditional('otherSchoolField', 'otherSchoolName', schoolOther);
+    renderClassLevels();
     toggleConditional('disabilityDetailField', 'disabilityDetail', app.state.fields.disability === 'exists');
     const illnessExists = app.state.fields.illness === 'exists';
     toggleConditional('illnessDetailFields', 'illnessDetail', illnessExists);
@@ -353,12 +409,105 @@
     else if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value)) invalid.push(errorFor(element, 'emailError'));
   }
 
+  /* --- ulke kodlu telefon ---------------------------------------
+     Numara ulusal bicimde tutulur (bas sifir yok), ulke kodu ayri
+     alanda durur. Gruplama yalnizca gorunumdur; gonderimde E.164. */
+  const TEL_ULKE = {
+    '32':  { min: 8,  max: 9,  grup: (d) => (d.charAt(0) === '4' ? [3, 2, 2, 2] : ('239'.indexOf(d.charAt(0)) >= 0 ? [1, 3, 2, 2] : [2, 2, 2, 2])) },
+    '90':  { min: 10, max: 10, grup: () => [3, 3, 2, 2] },
+    '33':  { min: 9,  max: 9,  grup: () => [1, 2, 2, 2, 2] },
+    '31':  { min: 9,  max: 9,  grup: () => [1, 4, 4] },
+    '49':  { min: 6,  max: 11, grup: () => [4, 4, 4, 4] },
+    '352': { min: 6,  max: 9,  grup: () => [3, 3, 3] },
+    '44':  { min: 9,  max: 10, grup: () => [4, 3, 3] },
+    '39':  { min: 9,  max: 10, grup: () => [3, 3, 4] },
+    '34':  { min: 9,  max: 9,  grup: () => [3, 3, 3] },
+    '212': { min: 9,  max: 9,  grup: () => [3, 3, 3] }
+  };
+  const TEL_ALANLARI = ['studentPhone', 'emergencyPhone', 'homePhone', 'guardianPhone'];
+
+  function telAyar(kod) {
+    return TEL_ULKE[String(kod || '32')] || { min: 7, max: 13, grup: () => [3, 3, 3, 3] };
+  }
+
+  function telBicimle(ham, kod) {
+    let rakam = String(ham || '').replace(/\D/g, '');
+    while (rakam.charAt(0) === '0') rakam = rakam.slice(1);
+    const ayar = telAyar(kod);
+    rakam = rakam.slice(0, ayar.max);
+    const parcalar = [];
+    let i = 0;
+    (ayar.grup(rakam) || []).forEach((uzunluk) => {
+      if (i >= rakam.length) return;
+      parcalar.push(rakam.slice(i, i + uzunluk));
+      i += uzunluk;
+    });
+    if (i < rakam.length) parcalar.push(rakam.slice(i));
+    return parcalar.join(' ');
+  }
+
+  function telefonlariBagla() {
+    TEL_ALANLARI.forEach((id) => {
+      const girdi = document.getElementById(id);
+      const kod = document.getElementById(`${id}CC`);
+      if (!girdi || !kod) return;
+      const uygula = () => {
+        const ham = String(girdi.value || '');
+        const imlec = girdi.selectionStart === null ? ham.length : girdi.selectionStart;
+        const oncekiRakam = (ham.slice(0, imlec).match(/\d/g) || []).length;
+        const bicimli = telBicimle(ham, kod.value);
+        if (bicimli === ham) return;
+        girdi.value = bicimli;
+        app.state.fields[id] = bicimli;
+        let say = 0;
+        let poz = oncekiRakam === 0 ? 0 : bicimli.length;
+        if (oncekiRakam > 0) {
+          for (let i = 0; i < bicimli.length; i += 1) {
+            if (/\d/.test(bicimli.charAt(i))) say += 1;
+            if (say === oncekiRakam) { poz = i + 1; break; }
+          }
+        }
+        try { girdi.setSelectionRange(poz, poz); } catch (_) { /* desteklenmiyor */ }
+      };
+      girdi.addEventListener('input', uygula);
+      kod.addEventListener('change', uygula);
+      uygula();
+    });
+  }
+
+  /* Belgede/ozette gosterim: +32 471 79 46 82 */
+  app.telGosterim = function (id) {
+    const ulusal = String(app.state.fields[id] || '').trim();
+    if (!ulusal) return '';
+    return `+${String(app.state.fields[`${id}CC`] || '32')} ${ulusal}`;
+  };
+
+  /* Gonderimde: +32471794682 */
+  app.telE164 = function (id) {
+    const rakam = String(app.state.fields[id] || '').replace(/\D/g, '');
+    if (!rakam) return '';
+    return `+${String(app.state.fields[`${id}CC`] || '32')}${rakam}`;
+  };
+
+  /* Adres: Rue Example 14 bte 3, 6900 Marche-en-Famenne */
+  app.adresMetni = function (f) {
+    const alanlar = f || app.state.fields;
+    const sokak = [alanlar.streetName, alanlar.houseNumber].filter(Boolean).join(' ').trim();
+    const kutu = String(alanlar.boxNumber || '').trim();
+    const satir = kutu ? `${sokak} bte ${kutu}` : sokak;
+    const yerlesim = [alanlar.postalCode, alanlar.city].filter(Boolean).join(' ').trim();
+    return [satir, yerlesim].filter(Boolean).join(', ');
+  };
+
   function validPhone(id, requiredValue, invalid) {
     const element = document.getElementById(id);
+    const kod = document.getElementById(`${id}CC`);
     const value = element.value.trim();
     const digits = value.replace(/\D/g, '');
+    const ayar = telAyar(kod && kod.value);
     if (!value && requiredValue) invalid.push(errorFor(element, 'requiredError'));
-    else if (value && digits.length < 7) invalid.push(errorFor(element, 'phoneError'));
+    else if (value && digits.length < ayar.min) invalid.push(errorFor(element, 'phoneTooShort'));
+    else if (value && digits.length > ayar.max) invalid.push(errorFor(element, 'phoneTooLong'));
   }
 
   app.validateStep = function (step) {
@@ -385,7 +534,7 @@
       if (app.state.fields.previousCourse === 'yes' && !document.getElementById('previousLevel').value.trim()) invalid.push(errorFor(document.getElementById('previousLevel'), 'requiredError'));
     }
     if (step === 4) {
-      ['relationship', 'guardianName', 'occupation', 'guardianPhone', 'guardianEmail', 'street', 'postalCode', 'city'].forEach((id) => required(id, invalid));
+      ['relationship', 'guardianName', 'occupation', 'guardianPhone', 'guardianEmail', 'streetName', 'houseNumber', 'postalCode', 'city'].forEach((id) => required(id, invalid));
       validPhone('homePhone', false, invalid);
       validPhone('guardianPhone', true, invalid);
       validEmail('guardianEmail', true, invalid);
@@ -515,7 +664,7 @@
     const fields = app.state.fields;
     const list = document.getElementById('summaryList');
     const school = fields.school === '__other__' ? fields.otherSchoolName : fields.school;
-    const address = [fields.street, fields.postalCode, fields.city].filter(Boolean).join(', ');
+    const address = app.adresMetni(fields);
     const identityRows = [
       [app.t('identityFront'), app.state.images.identityFront ? app.t('identityFrontAdded') : app.t('notProvided')],
       [app.t('identityBack'), app.state.images.identityBack ? app.t('identityBackAdded') : app.t('notProvided')],
@@ -532,7 +681,7 @@
       [app.t('birthDate'), formattedDate(fields.birthDate)],
       [app.t('gender'), translatedChoice('gender', fields.gender)],
       [app.t('identityNumber'), fields.identityNumber],
-      [app.t('studentPhone'), fields.studentPhone],
+      [app.t('studentPhone'), app.telGosterim('studentPhone')],
       [app.t('studentEmail'), fields.studentEmail]
     ];
     const healthRows = [
@@ -542,7 +691,7 @@
       [app.t('illness'), fields.illness === 'exists' ? fields.illnessDetail : app.t('noIllness')],
       [app.t('medicine'), fields.medicine],
       [app.t('emergencyName'), fields.emergencyName],
-      [app.t('emergencyPhone'), fields.emergencyPhone],
+      [app.t('emergencyPhone'), app.telGosterim('emergencyPhone')],
       [app.t('previousCourse'), translatedChoice('yesNo', fields.previousCourse)],
       [app.t('previousLevel'), fields.previousCourse === 'yes' ? fields.previousLevel : '—'],
       [app.t('mediaConsent'), fields.mediaConsent === 'yes' ? app.t('mediaPermissionYes') : app.t('mediaPermissionNo')]
@@ -551,8 +700,8 @@
       [app.t('relationship'), translatedChoice('relationship', fields.relationship)],
       [app.t('guardianName'), fields.guardianName],
       [app.t('occupation'), fields.occupation],
-      [app.t('homePhone'), fields.homePhone],
-      [app.t('mobilePhone'), fields.guardianPhone],
+      [app.t('homePhone'), app.telGosterim('homePhone')],
+      [app.t('mobilePhone'), app.telGosterim('guardianPhone')],
       [app.t('email'), fields.guardianEmail],
       [app.t('address'), address]
     ];
@@ -608,7 +757,7 @@
     });
   }
 
-  app.processImage = async function (file) {
+  app.processImage = async function (file, secenek) {
     if (!file || !file.type.startsWith('image/')) throw new Error('invalid-image');
     if (file.size > MAX_IMAGE_BYTES) throw new Error('too-large');
     const decoded = await decodeImage(file);
@@ -623,10 +772,17 @@
       context.fillStyle = '#fff';
       context.fillRect(0, 0, width, height);
       context.drawImage(decoded.source, 0, 0, width, height);
-      const dataUrl = await canvasToDataUrl(canvas);
+      // Kimlik/kart gorsellerinde bos kenarlar otomatik atilir.
+      const son = secenek && secenek.kart && typeof app.kartKirp === 'function'
+        ? app.kartKirp(canvas)
+        : canvas;
+      const dataUrl = await canvasToDataUrl(son);
+      const sonEn = son.width;
+      const sonBoy = son.height;
+      if (son !== canvas) { son.width = 1; son.height = 1; }
       canvas.width = 1;
       canvas.height = 1;
-      return { dataUrl, width, height };
+      return { dataUrl, width: sonEn, height: sonBoy };
     } finally {
       decoded.close();
     }
@@ -648,7 +804,8 @@
     if (!file) return;
     setUploadStatus(key, 'imageProcessing', false);
     try {
-      const result = await app.processImage(file);
+      const kart = key === 'identityFront' || key === 'identityBack';
+      const result = await app.processImage(file, { kart });
       app.state.images[key] = result.dataUrl;
       updateImageUI();
       app.saveDraft();
@@ -661,6 +818,8 @@
   }
 
   function updateImageUI() {
+    const mrzDugme = document.getElementById('mrzOkuButonu');
+    if (mrzDugme) mrzDugme.disabled = !(app.state.images.identityBack || app.state.images.identityFront);
     Object.keys(app.state.images).forEach((key) => {
       const panel = document.querySelector(`[data-upload="${key}"]`);
       if (!panel) return;
@@ -712,34 +871,34 @@
      kullanilamaz. 302 yonlendirmesi redirect:'follow' ile izlenir.
   ----------------------------------------------------------------*/
   function gonderimAdresi() {
-    const f = app.state.fields;
-    return [f.street, [f.postalCode, f.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return app.adresMetni(app.state.fields);
   }
 
   function gonderimSaglikNotu() {
     const f = app.state.fields;
     const parcalar = [];
-    if (f.disability === 'yes' && f.disabilityDetail) parcalar.push('Engel: ' + f.disabilityDetail);
-    if (f.illness === 'yes' && f.illnessDetail) parcalar.push('Hastalik: ' + f.illnessDetail);
+    if (f.disability === 'exists' && f.disabilityDetail) parcalar.push('Engel: ' + f.disabilityDetail);
+    if (f.illness === 'exists' && f.illnessDetail) parcalar.push('Hastalik: ' + f.illnessDetail);
     if (f.medicine) parcalar.push('Ilac: ' + f.medicine);
-    if (f.emergencyName || f.emergencyPhone) parcalar.push('Acil: ' + [f.emergencyName, f.emergencyPhone].filter(Boolean).join(' '));
+    if (f.emergencyName || app.telE164('emergencyPhone')) parcalar.push('Acil: ' + [f.emergencyName, app.telGosterim('emergencyPhone')].filter(Boolean).join(' '));
     return parcalar.join(' | ');
   }
 
   function gonderimGovdesi(base64) {
     const f = app.state.fields;
-    const okul = f.school === 'other' ? (f.otherSchoolName || 'Diger') : (f.school || '');
+    const okul = f.school === '__other__' ? (f.otherSchoolName || 'Diger') : (f.school || '');
     return {
       sir: (window.GONDERIM && window.GONDERIM.ortakSir) || '',
       pdfBase64: base64,
       ogrenci: {
         ad: f.studentName || '', soyad: f.studentSurname || '',
         dogumTarihi: f.birthDate || '', cinsiyet: f.gender || '',
-        kimlikNo: f.identityNumber || '', okul: okul, sinif: f.classLevel || ''
+        kimlikNo: f.identityNumber || '', okul: okul, sinif: f.classLevel || '',
+        cep: app.telE164('studentPhone'), eposta: (f.studentEmail || '').trim()
       },
       veli: {
         yakinlik: f.relationship || '', adSoyad: f.guardianName || '',
-        cep: f.guardianPhone || '', eposta: f.guardianEmail || '', adres: gonderimAdresi()
+        cep: app.telE164('guardianPhone'), eposta: (f.guardianEmail || '').trim(), adres: gonderimAdresi()
       },
       saglikNotu: gonderimSaglikNotu(),
       goruntuIzni: f.mediaConsent === 'yes' || f.mediaConsent === true,
@@ -807,11 +966,7 @@
       basarili = true;
       app.state.submittedRef = sonuc.ref;
       if (typeof app.saveDraft === 'function') app.saveDraft();
-      document.getElementById('refNumber').textContent = sonuc.ref;
-      const basarıMetni = document.querySelector('#submitSuccess .success-message');
-      if (basarıMetni) basarıMetni.textContent = sonuc.guncelleme ? app.t('submitDoneUpdate') : app.t('submitDone');
-      document.getElementById('submitSuccess').hidden = false;
-      document.getElementById('submitSuccess').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      tesekkurGoster(sonuc.ref, sonuc.guncelleme);
     } catch (error) {
       console.error(error);
       const kod = String(error.message || '');
@@ -825,6 +980,95 @@
       dugme.removeAttribute('aria-busy');
       if (!basarili && dugme.textContent === app.t('submitting')) dugme.textContent = app.t('submitRegistration');
     }
+  }
+
+  /* --- kimlikten otomatik doldurma ------------------------------
+     Yalnizca ICAO kontrol haneleri dogrulanan degerler yazilir. */
+  function mrzAlanlariUygula(veri) {
+    const eslesme = {
+      studentSurname: veri.soyad,
+      studentName: veri.adlar,
+      birthDate: veri.dogumTarihi,
+      gender: veri.cinsiyet,
+      identityNumber: veri.kimlikNo
+    };
+    let sayac = 0;
+    Object.keys(eslesme).forEach((id) => {
+      const deger = eslesme[id];
+      if (!deger) return;
+      const alan = document.getElementById(id);
+      if (!alan) return;
+      if (alan.tagName === 'SELECT' && ![...alan.options].some((o) => o.value === deger)) return;
+      alan.value = deger;
+      app.state.fields[id] = deger;
+      clearElementError(alan);
+      alan.classList.add('oto-dolu');
+      sayac += 1;
+    });
+    if (sayac) {
+      updateDeclaration();
+      app.saveDraft();
+    }
+    return sayac;
+  }
+
+  async function mrzDoldur() {
+    const dugme = document.getElementById('mrzOkuButonu');
+    const durum = document.getElementById('mrzDurum');
+    if (!dugme || !app.mrz) return;
+    dugme.disabled = true;
+    dugme.setAttribute('aria-busy', 'true');
+    durum.classList.remove('mrz-basarisiz');
+    durum.textContent = app.t('mrzLoading');
+    try {
+      const veri = await app.mrz.oku(
+        [app.state.images.identityBack, app.state.images.identityFront],
+        (olay) => {
+          if (!olay || typeof olay.progress !== 'number') return;
+          const yuzde = Math.round(olay.progress * 100);
+          durum.textContent = `${app.t('mrzLoading')} %${yuzde}`;
+        }
+      );
+      if (!veri) {
+        durum.textContent = app.t('mrzFailed');
+        durum.classList.add('mrz-basarisiz');
+        return;
+      }
+      const sayac = mrzAlanlariUygula(veri);
+      if (!sayac) {
+        durum.textContent = app.t('mrzFailed');
+        durum.classList.add('mrz-basarisiz');
+        return;
+      }
+      durum.textContent = `${app.t('mrzDone')} (${sayac})`;
+      app.showToast(app.t('mrzToast'));
+    } catch (hata) {
+      console.error(hata);
+      durum.textContent = app.t('mrzError');
+      durum.classList.add('mrz-basarisiz');
+    } finally {
+      dugme.removeAttribute('aria-busy');
+      updateImageUI();
+    }
+  }
+
+  /* Tum adimlarin yerine gecen tek kapanis ekrani. */
+  function tesekkurGoster(ref, guncelleme) {
+    const ekran = document.getElementById('tesekkurEkrani');
+    if (!ekran) return;
+    document.querySelectorAll('.step[data-step]').forEach((bolum) => { bolum.hidden = true; });
+    const panel = document.getElementById('progressPanel');
+    if (panel) panel.hidden = true;
+    const gezinme = document.getElementById('formNavigation');
+    if (gezinme) gezinme.hidden = true;
+    const referans = document.getElementById('refNumber');
+    if (referans) referans.textContent = ref || '';
+    const baslik = document.getElementById('tesekkurBaslik');
+    if (baslik) baslik.textContent = guncelleme ? app.t('tesekkurBaslikGuncelleme') : app.t('tesekkurBaslik');
+    ekran.hidden = false;
+    ekran.setAttribute('tabindex', '-1');
+    try { ekran.focus({ preventScroll: true }); } catch (_) { /* eski tarayici */ }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function downloadPdf() {
@@ -878,10 +1122,6 @@
         if (kutu) kutu.open = true;
       }
       document.getElementById('submitBlock').hidden = !gonderimVar;
-      if (app.state.submittedRef) {
-        document.getElementById('refNumber').textContent = app.state.submittedRef;
-        document.getElementById('submitSuccess').hidden = false;
-      }
       document.getElementById('pdfActions').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (pdfError) {
       console.error(pdfError);
@@ -906,6 +1146,17 @@
     document.getElementById('toastClose').addEventListener('click', () => { document.getElementById('toast').hidden = true; });
     document.getElementById('createPdfButton').addEventListener('click', generatePdf);
     document.getElementById('downloadPdfButton').addEventListener('click', downloadPdf);
+    telefonlariBagla();
+    const mrzDugme = document.getElementById('mrzOkuButonu');
+    if (mrzDugme) mrzDugme.addEventListener('click', mrzDoldur);
+    const tesekkurIndir = document.getElementById('tesekkurIndir');
+    if (tesekkurIndir) tesekkurIndir.addEventListener('click', downloadPdf);
+    const tesekkurYeni = document.getElementById('tesekkurYeni');
+    if (tesekkurYeni) tesekkurYeni.addEventListener('click', () => {
+      if (!window.confirm(app.t('yeniKayitOnay'))) return;
+      try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* storage unavailable */ }
+      window.location.reload();
+    });
     document.getElementById('submitButton').addEventListener('click', submitRegistration);
     document.getElementById('sharePdfButton').addEventListener('click', sharePdf);
     document.getElementById('deleteDraftButton').addEventListener('click', () => {

@@ -183,24 +183,24 @@
     page.drawText(`${CAMI.name} · ${CAMI.kbo}`, { x: MARGIN, y: 704, size: 6.8, font, color: COLORS.muted });
 
     const school = fields.school === '__other__' ? fields.otherSchoolName : fields.school;
-    const address = [fields.street, fields.postalCode, fields.city].filter(Boolean).join(', ');
+    const address = app.adresMetni(fields);
     let y = 680;
     y = drawSectionHeader(page, app.lang === 'fr' ? 'INFORMATIONS SUR L’ÉLÈVE' : 'ÖĞRENCİ BİLGİLERİ', font, y);
     y = drawPair(page, font, y, [app.t('surname'), fields.studentSurname], [app.t('givenName'), fields.studentName]);
     y = drawPair(page, font, y, [app.t('birthPlace'), fields.birthPlace], [app.t('birthDate'), formatDate(fields.birthDate)]);
     y = drawPair(page, font, y, [app.t('gender'), labelChoice('gender', fields.gender)], [app.t('identityNumber'), fields.identityNumber]);
-    y = drawPair(page, font, y, [app.t('studentPhone'), fields.studentPhone], [app.t('studentEmail'), fields.studentEmail]);
+    y = drawPair(page, font, y, [app.t('studentPhone'), app.telGosterim('studentPhone')], [app.t('studentEmail'), fields.studentEmail]);
     y = drawPair(page, font, y, [app.t('school'), school], [app.t('classLevel'), fields.classLevel]);
     y = drawPair(page, font, y, [app.t('disability'), fields.disability === 'exists' ? fields.disabilityDetail : app.t('none')], [app.t('illness'), fields.illness === 'exists' ? fields.illnessDetail : app.t('none')]);
     y = drawPair(page, font, y, [app.t('medicine'), fields.medicine], [app.t('emergencyName'), fields.emergencyName]);
-    y = drawPair(page, font, y, [app.t('emergencyPhone'), fields.emergencyPhone], [app.t('previousCourse'), labelChoice('yesNo', fields.previousCourse)]);
+    y = drawPair(page, font, y, [app.t('emergencyPhone'), app.telGosterim('emergencyPhone')], [app.t('previousCourse'), labelChoice('yesNo', fields.previousCourse)]);
     y = drawPair(page, font, y, [app.t('previousLevel'), fields.previousLevel], [app.t('mediaConsent'), fields.mediaConsent === 'yes' ? app.t('mediaYes') : app.t('mediaNo')]);
 
     y -= 7;
     y = drawSectionHeader(page, app.lang === 'fr' ? 'INFORMATIONS SUR LE PARENT' : 'VELİ BİLGİLERİ', font, y);
     y = drawPair(page, font, y, [app.t('relationship'), labelChoice('relationship', fields.relationship)], [app.t('guardianName'), fields.guardianName]);
-    y = drawPair(page, font, y, [app.t('occupation'), fields.occupation], [app.t('homePhone'), fields.homePhone]);
-    y = drawPair(page, font, y, [app.t('mobilePhone'), fields.guardianPhone], [app.t('email'), fields.guardianEmail]);
+    y = drawPair(page, font, y, [app.t('occupation'), fields.occupation], [app.t('homePhone'), app.telGosterim('homePhone')]);
+    y = drawPair(page, font, y, [app.t('mobilePhone'), app.telGosterim('guardianPhone')], [app.t('email'), fields.guardianEmail]);
     y = drawPair(page, font, y, [app.t('address'), address], [app.t('courseYear'), CAMI.courseYear]);
 
     y -= 7;

@@ -84,6 +84,8 @@
     context.clearRect(0, 0, width, height);
     context.scale(dpr, dpr);
     drawStrokes(context, rect.width, rect.height, currentInk());
+    const sarmal = document.getElementById('signatureCanvasWrap');
+    if (sarmal) sarmal.classList.toggle('is-cizili', signature.strokes.length > 0);
     updateToolbar();
   }
 
@@ -95,13 +97,50 @@
     if (clear) clear.disabled = empty;
   }
 
+  /* Cizilen mürekkebin normalize sinir kutusu (yoksa null). */
+  function sinirKutusu() {
+    let bas = false;
+    let enAzX = 1;
+    let enAzY = 1;
+    let enCokX = 0;
+    let enCokY = 0;
+    signature.strokes.forEach((stroke) => stroke.forEach((point) => {
+      bas = true;
+      if (point.x < enAzX) enAzX = point.x;
+      if (point.x > enCokX) enCokX = point.x;
+      if (point.y < enAzY) enAzY = point.y;
+      if (point.y > enCokY) enCokY = point.y;
+    }));
+    return bas ? { enAzX, enAzY, enCokX, enCokY } : null;
+  }
+
+  /* Belgeye giden imza: tuval murekkebin sinirina kirpilir.
+     PDF'teki imza kutusu goruntuyu orani koruyarak yerlestirdigi icin,
+     sabit oranli tuval imzayi kutunun ucte birine sikistiriyordu; tam
+     kirpilmis goruntu ise kutuyu bastan basa doldurur. */
   function exportDataUrl() {
     if (!signature.strokes.length) return '';
+    const kutu = sinirKutusu();
+    if (!kutu) return '';
+    const TABAN_G = 1600;
+    const TABAN_B = 600;
+    const x0 = kutu.enAzX * TABAN_G;
+    const y0 = kutu.enAzY * TABAN_B;
+    const genislik = Math.max(28, (kutu.enCokX - kutu.enAzX) * TABAN_G);
+    const yukseklik = Math.max(28, (kutu.enCokY - kutu.enAzY) * TABAN_B);
+    // Pay her eksende oransal: sabit pay olsaydi imzanin en-boy orani bozulur,
+    // PDF'teki genis imza kutusunda goruntu yeniden kuculurdu. Alt sinir,
+    // cizgi kalinliginin tasan yarisini kirpmamak icindir.
+    const payX = Math.max(10, genislik * 0.05);
+    const payY = Math.max(10, yukseklik * 0.05);
+    // kucuk atilan imzalarda cozunurluk dusmesin diye olceklenir
+    const olcek = Math.min(3, Math.max(1, 900 / Math.max(genislik, yukseklik)));
     const canvas = document.createElement('canvas');
-    canvas.width = 1600;
-    canvas.height = 600;
+    canvas.width = Math.round((genislik + payX * 2) * olcek);
+    canvas.height = Math.round((yukseklik + payY * 2) * olcek);
     const context = canvas.getContext('2d');
-    drawStrokes(context, canvas.width, canvas.height, '#121a17', 2.8);
+    context.setTransform(olcek, 0, 0, olcek, (payX - x0) * olcek, (payY - y0) * olcek);
+    drawStrokes(context, TABAN_G, TABAN_B, '#121a17', 2.8);
     return canvas.toDataURL('image/png');
   }
 
@@ -228,6 +267,16 @@
     document.getElementById('undoSignatureButton').addEventListener('click', signature.undo);
     document.getElementById('clearSignatureButton').addEventListener('click', signature.clear);
     document.getElementById('clearSignatureInline').addEventListener('click', signature.clear);
+    signature.dialog.addEventListener('keydown', (event) => {
+      const kisayol = event.ctrlKey || event.metaKey;
+      if (kisayol && (event.key === 'z' || event.key === 'Z')) {
+        event.preventDefault();
+        signature.undo();
+      } else if (kisayol && event.key === 'Enter') {
+        event.preventDefault();
+        signature.finish();
+      }
+    });
     signature.dialog.addEventListener('cancel', (event) => {
       event.preventDefault();
       signature.dialog.close();

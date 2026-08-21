@@ -1,0 +1,197 @@
+[
+  {
+    "ad": "cinsiyet yalnizca Kiz/Erkek",
+    "gecti": true,
+    "ek": "Seçiniz | Kız | Erkek"
+  },
+  {
+    "ad": "BE cep: bas sifir atilir, gruplanir",
+    "gecti": true,
+    "ek": "471 79 46 82"
+  },
+  {
+    "ad": "varsayilan ulke kodu +32",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "TR cep: 532 123 45 67",
+    "gecti": true,
+    "ek": "532 123 45 67"
+  },
+  {
+    "ad": "okul gruplari sirali",
+    "gecti": true,
+    "ek": "Marche-en-Famenne okulları | Çevre belediyeler"
+  },
+  {
+    "ad": "once Marche okullari",
+    "gecti": true,
+    "ek": "Athénée Royal (ARMBB) – Section fondamentale | École communale d'Aye"
+  },
+  {
+    "ad": "en sonda Diger",
+    "gecti": true,
+    "ek": "__other__"
+  },
+  {
+    "ad": "sinif once kilitli",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "temel egitim sinifi 9 kademe",
+    "gecti": true,
+    "ek": "10 → Anaokulu 1. yıl (1re maternelle)"
+  },
+  {
+    "ad": "ortaogretim 7 kademe",
+    "gecti": true,
+    "ek": "8 → Ortaöğretim 1. sınıf (1re secondaire)"
+  },
+  {
+    "ad": "diger okulda tum kademeler",
+    "gecti": true,
+    "ek": "17 secenek / 2 grup"
+  },
+  {
+    "ad": "cadde adi alani var",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "kapi no alani var",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "eski birlesik alan yok",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "imza ipucu baslangicta gorunur",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "kilavuz cizgisi var",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "cizince ipucu kayboluyor",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "imza tuvali murekkebe kirpildi",
+    "gecti": true,
+    "ek": "yatay doluluk 0.93 / dikey 0.84 / tuval 990×272"
+  },
+  {
+    "ad": "tesekkur ekrani gorunur",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "referans yazili",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "diger adimlar gizli",
+    "gecti": true,
+    "ek": "0 adim acik"
+  },
+  {
+    "ad": "ilerleme paneli gizli",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "gezinme gizli",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "gonderimde okul dogru",
+    "gecti": true,
+    "ek": "École communale d'Aye"
+  },
+  {
+    "ad": "gonderimde sinif dogru",
+    "gecti": true,
+    "ek": "4e primaire"
+  },
+  {
+    "ad": "ogrenci telefonu E.164",
+    "gecti": true,
+    "ek": "+32471794682"
+  },
+  {
+    "ad": "veli telefonu E.164",
+    "gecti": true,
+    "ek": "+32471794682"
+  },
+  {
+    "ad": "ogrenci e-postasi gonderiliyor",
+    "gecti": true,
+    "ek": "seyma@example.be"
+  },
+  {
+    "ad": "veli e-postasi gonderiliyor",
+    "gecti": true,
+    "ek": "veli@example.be"
+  },
+  {
+    "ad": "adres birlesik dogru",
+    "gecti": true,
+    "ek": "Thier des Corbeaux 14 bte 3, 6900 Marche-en-Famenne"
+  },
+  {
+    "ad": "PDF gonderildi",
+    "gecti": true,
+    "ek": "71 KB"
+  },
+  {
+    "ad": "kimlik kenarlari otomatik kirpiliyor",
+    "gecti": true,
+    "ek": "428×267 (beklenen ≈ 500×320)"
+  },
+  {
+    "ad": "MRZ dugmesi etkinlesti",
+    "gecti": true,
+    "ek": ""
+  },
+  {
+    "ad": "MRZ soyadi",
+    "gecti": true,
+    "ek": "KAYAHAN"
+  },
+  {
+    "ad": "MRZ adi",
+    "gecti": true,
+    "ek": "Seyma Gulcin"
+  },
+  {
+    "ad": "MRZ dogum tarihi",
+    "gecti": true,
+    "ek": "2012-04-15"
+  },
+  {
+    "ad": "MRZ cinsiyeti",
+    "gecti": true,
+    "ek": "female"
+  },
+  {
+    "ad": "MRZ kimlik numarasi",
+    "gecti": true,
+    "ek": "12.04.15-001.23"
+  },
+  {
+    "ad": "MRZ durum mesaji olumlu",
+    "gecti": true,
+    "ek": "Alanlar kimlikten dolduruldu. Türkçe harfleri kontrol ediniz. (5)"
+  }
+]

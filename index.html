@@ -156,6 +156,13 @@
             </article>
           </div>
 
+          <div class="mrz-kutu">
+            <button class="button button-secondary mrz-dugme" type="button" id="mrzOkuButonu" disabled>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h6v2H6v3H4V5Zm10 0h6v5h-2V7h-4V5ZM4 14h2v3h4v2H4v-5Zm14 0h2v5h-6v-2h4v-3ZM7 11h10v2H7v-2Z"/></svg>
+              <span data-i18n="mrzButton">Bilgileri kimlikten oku</span>
+            </button>
+            <p class="mrz-durum" id="mrzDurum" role="status" data-i18n="mrzHelp">Kimliğin arka yüzündeki makine okunabilir satırlardan ad, soyad, doğum tarihi ve numara otomatik doldurulur.</p>
+          </div>
           <label class="check-row manual-check">
             <input type="checkbox" name="manualIdentity" value="yes">
             <span><strong data-i18n="manualIdentity">Kimliğim yanımda değil, bilgileri elle gireceğim</strong><small data-i18n="identitySkipNote">Bu adım zorunlu değildir. Kimlik eklenmezse özette hatırlatma gösterilir.</small></span>
@@ -189,9 +196,9 @@
             <div class="field"><label for="studentName"><span data-i18n="givenName">Adı</span> <span aria-hidden="true">*</span></label><input id="studentName" name="studentName" autocomplete="given-name" required aria-describedby="studentNameError"><p class="field-error" id="studentNameError"></p></div>
             <div class="field"><label for="birthPlace"><span data-i18n="birthPlace">Doğum yeri</span> <span aria-hidden="true">*</span></label><input id="birthPlace" name="birthPlace" autocomplete="off" required aria-describedby="birthPlaceError"><p class="field-error" id="birthPlaceError"></p></div>
             <div class="field"><label for="birthDate"><span data-i18n="birthDate">Doğum tarihi</span> <span aria-hidden="true">*</span></label><input id="birthDate" name="birthDate" type="date" autocomplete="bday" required aria-describedby="birthDateError"><p class="field-error" id="birthDateError"></p></div>
-            <div class="field"><label for="gender"><span data-i18n="gender">Cinsiyeti</span> <span aria-hidden="true">*</span></label><select id="gender" name="gender" required aria-describedby="genderError"><option value="" data-i18n="selectOne">Seçiniz</option><option value="female" data-i18n="female">Kız</option><option value="male" data-i18n="male">Erkek</option><option value="other" data-i18n="otherGender">Diğer / belirtmek istemiyor</option></select><p class="field-error" id="genderError"></p></div>
+            <div class="field"><label for="gender"><span data-i18n="gender">Cinsiyeti</span> <span aria-hidden="true">*</span></label><select id="gender" name="gender" required aria-describedby="genderError"><option value="" data-i18n="selectOne">Seçiniz</option><option value="female" data-i18n="female">Kız</option><option value="male" data-i18n="male">Erkek</option></select><p class="field-error" id="genderError"></p></div>
             <div class="field"><label for="identityNumber"><span data-i18n="identityNumber">Kimlik no</span> <span aria-hidden="true">*</span></label><input id="identityNumber" name="identityNumber" inputmode="numeric" autocomplete="off" minlength="6" maxlength="20" required aria-describedby="identityNumberHelp identityNumberError"><small class="field-help" id="identityNumberHelp" data-i18n="identityNumberHelp">Belçika veya T.C. kimlik numarası</small><p class="field-error" id="identityNumberError"></p></div>
-            <div class="field"><label for="studentPhone"><span data-i18n="studentPhone">Öğrencinin cep telefonu</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="studentPhone" name="studentPhone" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="studentPhoneError"><p class="field-error" id="studentPhoneError"></p></div>
+            <div class="field"><label for="studentPhone"><span data-i18n="studentPhone">Öğrencinin cep telefonu</span> <small data-i18n="optional">İsteğe bağlı</small></label><div class="tel-grup"><select class="tel-cc" id="studentPhoneCC" name="studentPhoneCC" aria-label="Ülke kodu / Indicatif"><option value="32" selected>BE +32</option><option value="90">TR +90</option><option value="33">FR +33</option><option value="31">NL +31</option><option value="49">DE +49</option><option value="352">LU +352</option><option value="44">UK +44</option><option value="39">IT +39</option><option value="34">ES +34</option><option value="212">MA +212</option></select><input id="studentPhone" name="studentPhone" type="tel" inputmode="numeric" autocomplete="tel-national" aria-describedby="studentPhoneError" placeholder="471 79 46 82"></div><p class="field-error" id="studentPhoneError"></p></div>
             <div class="field"><label for="studentEmail"><span data-i18n="studentEmail">Öğrencinin e-postası</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="studentEmail" name="studentEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="studentEmailError"><p class="field-error" id="studentEmailError"></p></div>
           </div>
         </section>
@@ -202,7 +209,7 @@
           <div class="form-grid">
             <div class="field field-full"><label for="school"><span data-i18n="school">Okuduğu okul</span> <span aria-hidden="true">*</span></label><select id="school" name="school" required aria-describedby="schoolError"><option value="" data-i18n="selectOne">Seçiniz</option></select><p class="field-error" id="schoolError"></p></div>
             <div class="field field-full conditional-field" id="otherSchoolField" hidden><label for="otherSchoolName"><span data-i18n="otherSchoolName">Okulun adı</span> <span aria-hidden="true">*</span></label><input id="otherSchoolName" name="otherSchoolName" autocomplete="organization" aria-describedby="otherSchoolNameError"><p class="field-error" id="otherSchoolNameError"></p></div>
-            <div class="field field-full"><label for="classLevel"><span data-i18n="classLevel">Sınıfı</span> <span aria-hidden="true">*</span></label><input id="classLevel" name="classLevel" autocomplete="off" required data-i18n-placeholder="classPlaceholder" placeholder="Örn. 4. primaire / 1. secondaire" aria-describedby="classLevelError"><p class="field-error" id="classLevelError"></p></div>
+            <div class="field field-full"><label for="classLevel"><span data-i18n="classLevel">Sınıfı</span> <span aria-hidden="true">*</span></label><select id="classLevel" name="classLevel" required aria-describedby="classLevelHelp classLevelError" disabled><option value="" data-i18n="selectSchoolFirst">Önce okulu seçiniz</option></select><small class="field-help" id="classLevelHelp" data-i18n="classLevelHelp">Sınıf listesi seçtiğiniz okulun kademesine göre gelir.</small><p class="field-error" id="classLevelError"></p></div>
           </div>
 
           <div class="section-divider"></div>
@@ -226,7 +233,7 @@
 
           <div class="form-grid">
             <div class="field"><label for="emergencyName"><span data-i18n="emergencyName">Acil durumda aranacak kişi</span> <span aria-hidden="true">*</span></label><input id="emergencyName" name="emergencyName" autocomplete="name" required aria-describedby="emergencyNameError"><p class="field-error" id="emergencyNameError"></p></div>
-            <div class="field"><label for="emergencyPhone"><span data-i18n="emergencyPhone">Acil durum telefonu</span> <span aria-hidden="true">*</span></label><input id="emergencyPhone" name="emergencyPhone" type="tel" inputmode="tel" autocomplete="tel" required aria-describedby="emergencyPhoneError"><p class="field-error" id="emergencyPhoneError"></p></div>
+            <div class="field"><label for="emergencyPhone"><span data-i18n="emergencyPhone">Acil durum telefonu</span> <span aria-hidden="true">*</span></label><div class="tel-grup"><select class="tel-cc" id="emergencyPhoneCC" name="emergencyPhoneCC" aria-label="Ülke kodu / Indicatif"><option value="32" selected>BE +32</option><option value="90">TR +90</option><option value="33">FR +33</option><option value="31">NL +31</option><option value="49">DE +49</option><option value="352">LU +352</option><option value="44">UK +44</option><option value="39">IT +39</option><option value="34">ES +34</option><option value="212">MA +212</option></select><input id="emergencyPhone" name="emergencyPhone" type="tel" inputmode="numeric" autocomplete="tel-national" required aria-describedby="emergencyPhoneError" placeholder="471 79 46 82"></div><p class="field-error" id="emergencyPhoneError"></p></div>
           </div>
 
           <fieldset class="choice-group" data-conditional-group="previousCourse">
@@ -250,10 +257,10 @@
             <div class="field"><label for="relationship"><span data-i18n="relationship">Veli yakınlığı</span> <span aria-hidden="true">*</span></label><select id="relationship" name="relationship" required aria-describedby="relationshipError"><option value="" data-i18n="selectOne">Seçiniz</option><option value="father" data-i18n="father">Baba</option><option value="mother" data-i18n="mother">Anne</option><option value="guardian" data-i18n="legalGuardian">Vasi</option></select><p class="field-error" id="relationshipError"></p></div>
             <div class="field"><label for="guardianName"><span data-i18n="guardianName">Velinin adı ve soyadı</span> <span aria-hidden="true">*</span></label><input id="guardianName" name="guardianName" autocomplete="name" required aria-describedby="guardianNameError"><p class="field-error" id="guardianNameError"></p></div>
             <div class="field"><label for="occupation"><span data-i18n="occupation">Mesleği</span> <span aria-hidden="true">*</span></label><input id="occupation" name="occupation" autocomplete="organization-title" required aria-describedby="occupationError"><p class="field-error" id="occupationError"></p></div>
-            <div class="field"><label for="homePhone"><span data-i18n="homePhone">Ev telefonu</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="homePhone" name="homePhone" type="tel" inputmode="tel" autocomplete="tel-national" aria-describedby="homePhoneError"><p class="field-error" id="homePhoneError"></p></div>
-            <div class="field"><label for="guardianPhone"><span data-i18n="mobilePhone">Cep telefonu</span> <span aria-hidden="true">*</span></label><input id="guardianPhone" name="guardianPhone" type="tel" inputmode="tel" autocomplete="tel" required aria-describedby="guardianPhoneError"><p class="field-error" id="guardianPhoneError"></p></div>
+            <div class="field"><label for="homePhone"><span data-i18n="homePhone">Ev telefonu</span> <small data-i18n="optional">İsteğe bağlı</small></label><div class="tel-grup"><select class="tel-cc" id="homePhoneCC" name="homePhoneCC" aria-label="Ülke kodu / Indicatif"><option value="32" selected>BE +32</option><option value="90">TR +90</option><option value="33">FR +33</option><option value="31">NL +31</option><option value="49">DE +49</option><option value="352">LU +352</option><option value="44">UK +44</option><option value="39">IT +39</option><option value="34">ES +34</option><option value="212">MA +212</option></select><input id="homePhone" name="homePhone" type="tel" inputmode="numeric" autocomplete="tel-national" aria-describedby="homePhoneError" placeholder="471 79 46 82"></div><p class="field-error" id="homePhoneError"></p></div>
+            <div class="field"><label for="guardianPhone"><span data-i18n="mobilePhone">Cep telefonu</span> <span aria-hidden="true">*</span></label><div class="tel-grup"><select class="tel-cc" id="guardianPhoneCC" name="guardianPhoneCC" aria-label="Ülke kodu / Indicatif"><option value="32" selected>BE +32</option><option value="90">TR +90</option><option value="33">FR +33</option><option value="31">NL +31</option><option value="49">DE +49</option><option value="352">LU +352</option><option value="44">UK +44</option><option value="39">IT +39</option><option value="34">ES +34</option><option value="212">MA +212</option></select><input id="guardianPhone" name="guardianPhone" type="tel" inputmode="numeric" autocomplete="tel-national" required aria-describedby="guardianPhoneError" placeholder="471 79 46 82"></div><p class="field-error" id="guardianPhoneError"></p></div>
             <div class="field"><label for="guardianEmail"><span data-i18n="email">E-posta</span> <span aria-hidden="true">*</span></label><input id="guardianEmail" name="guardianEmail" type="email" inputmode="email" autocomplete="email" required aria-describedby="guardianEmailError"><p class="field-error" id="guardianEmailError"></p></div>
-            <div class="field field-full"><label for="street"><span data-i18n="street">Sokak ve kapı no</span> <span aria-hidden="true">*</span></label><input id="street" name="street" autocomplete="street-address" required aria-describedby="streetError"><p class="field-error" id="streetError"></p></div>
+            <div class="field field-full"><label for="streetName"><span data-i18n="streetName">Cadde / sokak adı</span> <span aria-hidden="true">*</span></label><input id="streetName" name="streetName" autocomplete="address-line1" required aria-describedby="streetNameError"><p class="field-error" id="streetNameError"></p></div><div class="field"><label for="houseNumber"><span data-i18n="houseNumber">Kapı no</span> <span aria-hidden="true">*</span></label><input id="houseNumber" name="houseNumber" inputmode="numeric" autocomplete="off" maxlength="10" required aria-describedby="houseNumberError"><p class="field-error" id="houseNumberError"></p></div><div class="field"><label for="boxNumber"><span data-i18n="boxNumber">Kutu / daire</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="boxNumber" name="boxNumber" autocomplete="address-line2" maxlength="10" aria-describedby="boxNumberError"><p class="field-error" id="boxNumberError"></p></div>
             <div class="field"><label for="postalCode"><span data-i18n="postalCode">Posta kodu</span> <span aria-hidden="true">*</span></label><input id="postalCode" name="postalCode" inputmode="numeric" autocomplete="postal-code" required aria-describedby="postalCodeError"><p class="field-error" id="postalCodeError"></p></div>
             <div class="field"><label for="city"><span data-i18n="city">Şehir</span> <span aria-hidden="true">*</span></label><input id="city" name="city" autocomplete="address-level2" required aria-describedby="cityError"><p class="field-error" id="cityError"></p></div>
           </div>
@@ -315,11 +322,7 @@
                 <small data-i18n="submitNote">Kaydınız kurs yönetimine iletilir ve size bir referans numarası verilir.</small>
                 <p class="field-error section-error" id="submitError" aria-live="assertive"></p>
               </div>
-              <div id="submitSuccess" class="submit-success" hidden role="status">
-                <p class="success-message" data-i18n="submitDone">Kaydınız alındı.</p>
-                <p class="ref-number" id="refNumber"></p>
-                <small data-i18n="refNote">Bu numarayı saklayınız. Kendi kopyanız için aşağıdan PDF'i de indirebilirsiniz.</small>
-              </div>
+
               <button class="button button-primary" type="button" id="sharePdfButton"><span data-i18n="shareWhatsApp">WhatsApp ile gönder</span></button>
               <button class="button button-secondary" type="button" id="downloadPdfButton" data-i18n="downloadPdf">PDF’yi indir</button>
               <a class="button button-secondary" id="emailPdfLink" href="#" data-i18n="emailPdf">E-posta ile gönder</a>
@@ -341,6 +344,31 @@
           <button class="button button-secondary" type="button" id="backButton" data-i18n="back">Geri</button>
           <button class="button button-primary" type="button" id="nextButton" data-i18n="continue">Devam</button>
         </nav>
+      
+        <section class="step tesekkur" id="tesekkurEkrani" hidden aria-labelledby="tesekkurBaslik">
+          <div class="tesekkur-ic">
+            <div class="tesekkur-tik" aria-hidden="true">
+              <svg viewBox="0 0 64 64" width="72" height="72" role="presentation">
+                <circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="3"/>
+                <path d="M19 33.5 L28 42.5 L45 23" fill="none" stroke="currentColor" stroke-width="4"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h1 id="tesekkurBaslik" data-i18n="tesekkurBaslik">Kaydınız alınmıştır</h1>
+            <p class="tesekkur-alt" data-i18n="tesekkurAlt">Teşekkür ederiz.</p>
+            <p class="tesekkur-ref-et" data-i18n="tesekkurRefEt">Kayıt numaranız</p>
+            <p class="ref-number" id="refNumber"></p>
+            <p class="tesekkur-not" data-i18n="tesekkurNot">Bu numarayı saklayınız. Dersler 5 Eylül 2026 Cumartesi günü başlıyor.</p>
+            <div class="tesekkur-eylem">
+              <button class="button button-secondary" type="button" id="tesekkurIndir" data-i18n="downloadPdf">PDF'yi indir</button>
+              <button class="button button-secondary" type="button" id="tesekkurYeni" data-i18n="yeniKayit">Yeni kayıt</button>
+            </div>
+            <address class="tesekkur-adres">
+              <span data-i18n="institutionShort">Marche Ulu Camii</span><br>
+              <span data-i18n="mosqueAddress">Thier des Corbeaux 14, 6900 Marche-en-Famenne</span>
+            </address>
+          </div>
+        </section>
       </form>
     </main>
 
@@ -355,8 +383,11 @@
       </header>
       <div class="signature-canvas-wrap" id="signatureCanvasWrap">
         <canvas id="signatureCanvas"></canvas>
+        <span class="signature-cizgi" aria-hidden="true"></span>
+        <span class="signature-carpi" aria-hidden="true">&#215;</span>
         <p aria-hidden="true" data-i18n="signatureHintBilingual">İmzanızı bu alana atabilirsiniz / Vous pouvez signer dans cette zone</p>
       </div>
+      <p class="signature-yon-ipucu" aria-hidden="true" data-i18n="signatureRotateHint">Telefonu yan çevirirseniz imza alanı genişler.</p>
       <footer class="signature-toolbar">
         <button class="button button-secondary" type="button" id="undoSignatureButton" data-i18n="undo">Geri al</button>
         <button class="button button-secondary" type="button" id="clearSignatureButton" data-i18n="clear">Temizle</button>
@@ -372,6 +403,7 @@
   <script src="vendor/DejaVuSans.base64.js"></script>
   <script src="assets/i18n.js"></script>
   <script src="assets/data.js"></script>
+  <script src="assets/kimlik.js"></script>
   <script src="assets/signature.js"></script>
   <script src="assets/pdf.js"></script>
   <script src="assets/app.js"></script>

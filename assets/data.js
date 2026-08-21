@@ -121,63 +121,86 @@
     }
   };
 
-  // Kaynaklar: Ville de Marche-en-Famenne ve ecolescommunales.marche.be;
-  // ELMA; ARMBB; Durbuy, Hotton, Rendeux, Nassogne, Somme-Leuze ve
-  // Tenneville belediye/eğitim sayfaları. Doğrulanmayan yerleşim okulları eklenmedi.
-  app.schools = {
-    fundamental: [
-      'ARMBB – Section fondamentale (Barvaux-sur-Ourthe)',
-      'ARMBB – Section fondamentale (Bomal-sur-Ourthe)',
-      'ARMBB – Section fondamentale (Marche-en-Famenne)',
-      'École communale de Ambly (Nassogne)',
-      'École communale de Aye',
-      'École communale de Bande (Nassogne)',
-      'École communale de Barvaux-sur-Ourthe (Durbuy)',
-      'École communale de Bomal-sur-Ourthe (Durbuy)',
-      'École communale de Borlon (Durbuy)',
-      'École communale de Champlon (Tenneville)',
-      'École communale de Forrières (Nassogne)',
-      'École communale de Grune (Nassogne)',
-      'École communale de Hampteau (Hotton)',
-      'École communale de Hargimont',
-      'École communale de Heyd (Durbuy)',
-      'École communale de Hollogne',
-      'École communale de Hotton',
-      'École communale de Humain',
-      'École communale de Izier (Durbuy)',
-      'École communale de Nassogne',
-      'École communale de On',
-      'École communale de Petithan (Durbuy)',
-      'École communale de Rendeux',
-      'École communale de Somme-Leuze – implantation de Bonsin',
-      'École communale de Somme-Leuze – implantation de Heure',
-      'École communale de Somme-Leuze – implantation de Noiseux',
-      'École communale de Somme-Leuze – implantation de Somme-Leuze',
-      'École communale de Tenneville',
-      'École communale de Tohogne (Durbuy)',
-      'École communale de Waha',
-      'École Enrico Macias (Hotton)',
-      'École fondamentale libre de Bourdon (Hotton)',
-      'École fondamentale libre de Nassogne',
-      'École fondamentale libre de On',
-      'École fondamentale libre Hotton-Melreux – implantation de Hotton',
-      'École fondamentale libre Hotton-Melreux – implantation de Melreux',
-      'École libre « La P’tite École » (Rendeux)',
-      'École libre Saint-Antoine (Marloie)',
-      'École libre Saint-Martin (Marche-en-Famenne)',
-      'École libre Saint-Remacle (Aye)',
-      'Institut médico-pédagogique de Marloie – primaire spécialisé',
-      'Institut Notre-Dame – fondamental (Marche-en-Famenne)'
+  /* Okullar iki grupta: once Marche-en-Famenne belediyesi (merkez ve koyleri:
+     Aye, Hargimont, Hollogne, Humain, Marloie, On, Roy, Verdenne, Waha),
+     sonra cevre belediyeler. `tur` alani sinif listesini belirler. */
+  app.schools = [
+    // ---------------- Marche-en-Famenne ----------------
+    { ad: "Athénée Royal (ARMBB) – Section fondamentale", grup: 'marche', tur: 'fondamental' },
+    { ad: "École communale d'Aye", grup: 'marche', tur: 'fondamental' },
+    { ad: "École communale de Hargimont", grup: 'marche', tur: 'fondamental' },
+    { ad: "École communale de Hollogne", grup: 'marche', tur: 'fondamental' },
+    { ad: "École communale de Humain", grup: 'marche', tur: 'fondamental' },
+    { ad: "École communale d'On", grup: 'marche', tur: 'fondamental' },
+    { ad: "École communale de Waha", grup: 'marche', tur: 'fondamental' },
+    { ad: "École fondamentale libre d'On", grup: 'marche', tur: 'fondamental' },
+    { ad: "École libre Saint-Antoine (Marloie)", grup: 'marche', tur: 'fondamental' },
+    { ad: "École libre Saint-Martin", grup: 'marche', tur: 'fondamental' },
+    { ad: "École libre Saint-Remacle (Aye)", grup: 'marche', tur: 'fondamental' },
+    { ad: "Institut Notre-Dame – Fondamental", grup: 'marche', tur: 'fondamental' },
+    { ad: "Institut médico-pédagogique de Marloie – Primaire spécialisé", grup: 'marche', tur: 'fondamental' },
+    { ad: "Athénée Royal (ARMBB) – Enseignement secondaire", grup: 'marche', tur: 'secondaire' },
+    { ad: "Institut Saint-Roch", grup: 'marche', tur: 'secondaire' },
+    { ad: "Institut Sainte-Julie", grup: 'marche', tur: 'secondaire' },
+    { ad: "Institut Saint-Laurent", grup: 'marche', tur: 'secondaire' },
+    { ad: "Institut d'enseignement spécialisé de Marloie", grup: 'marche', tur: 'secondaire' },
+    { ad: "CEFA – Marche-en-Famenne", grup: 'marche', tur: 'secondaire' },
+    // ---------------- cevre belediyeler ----------------
+    { ad: "Athénée Royal (ARMBB) – Section fondamentale (Barvaux-sur-Ourthe)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "Athénée Royal (ARMBB) – Section fondamentale (Bomal-sur-Ourthe)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale d'Ambly (Nassogne)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Bande (Nassogne)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Barvaux-sur-Ourthe (Durbuy)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Bomal-sur-Ourthe (Durbuy)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Borlon (Durbuy)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Champlon (Tenneville)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Forrières (Nassogne)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Grune (Nassogne)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Hampteau (Hotton)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Heyd (Durbuy)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Hotton", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale d'Izier (Durbuy)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Nassogne", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Petithan (Durbuy)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Rendeux", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Somme-Leuze – Implantation de Bonsin", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Somme-Leuze – Implantation de Heure", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Somme-Leuze – Implantation de Noiseux", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Somme-Leuze – Implantation de Somme-Leuze", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Tenneville", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École communale de Tohogne (Durbuy)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École Enrico Macias (Hotton)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École fondamentale libre de Bourdon (Hotton)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École fondamentale libre de Nassogne", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École fondamentale libre Hotton-Melreux – Implantation de Hotton", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École fondamentale libre Hotton-Melreux – Implantation de Melreux", grup: 'cevre', tur: 'fondamental' },
+    { ad: "École libre « La P'tite École » (Rendeux)", grup: 'cevre', tur: 'fondamental' },
+    { ad: "Athénée Royal (ARMBB) – Enseignement secondaire (Bomal-sur-Ourthe)", grup: 'cevre', tur: 'secondaire' },
+    { ad: "Institut du Sacré-Cœur (Barvaux-sur-Ourthe)", grup: 'cevre', tur: 'secondaire' }
+  ];
+
+  /* Sinif seviyeleri — okulun turune gore acilir listeye doldurulur. */
+  app.classLevels = {
+    fondamental: [
+      { v: 'M1', tr: 'Anaokulu 1. yıl', fr: '1re maternelle' },
+      { v: 'M2', tr: 'Anaokulu 2. yıl', fr: '2e maternelle' },
+      { v: 'M3', tr: 'Anaokulu 3. yıl', fr: '3e maternelle' },
+      { v: 'P1', tr: 'İlkokul 1. sınıf', fr: '1re primaire' },
+      { v: 'P2', tr: 'İlkokul 2. sınıf', fr: '2e primaire' },
+      { v: 'P3', tr: 'İlkokul 3. sınıf', fr: '3e primaire' },
+      { v: 'P4', tr: 'İlkokul 4. sınıf', fr: '4e primaire' },
+      { v: 'P5', tr: 'İlkokul 5. sınıf', fr: '5e primaire' },
+      { v: 'P6', tr: 'İlkokul 6. sınıf', fr: '6e primaire' }
     ],
-    secondary: [
-      'ARMBB – enseignement secondaire (Bomal-sur-Ourthe)',
-      'ARMBB – enseignement secondaire (Marche-en-Famenne)',
-      'CEFA – Marche-en-Famenne',
-      'Institut d’enseignement spécialisé de Marloie',
-      'Institut du Sacré-Cœur (Barvaux-sur-Ourthe)',
-      'Institut Saint-Laurent (Marche-en-Famenne)',
-      'Institut Saint-Roch (Marche-en-Famenne)',
-      'Institut Sainte-Julie (Marche-en-Famenne)'
+    secondaire: [
+      { v: 'S1', tr: 'Ortaöğretim 1. sınıf', fr: '1re secondaire' },
+      { v: 'S2', tr: 'Ortaöğretim 2. sınıf', fr: '2e secondaire' },
+      { v: 'S3', tr: 'Ortaöğretim 3. sınıf', fr: '3e secondaire' },
+      { v: 'S4', tr: 'Ortaöğretim 4. sınıf', fr: '4e secondaire' },
+      { v: 'S5', tr: 'Ortaöğretim 5. sınıf', fr: '5e secondaire' },
+      { v: 'S6', tr: 'Ortaöğretim 6. sınıf', fr: '6e secondaire' },
+      { v: 'S7', tr: 'Ortaöğretim 7. sınıf', fr: '7e secondaire' }
     ]
   };
+
 }());

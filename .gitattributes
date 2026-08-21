@@ -1,0 +1,4 @@
+*.gz binary
+*.wasm binary
+*.ttf binary
+vendor/tesseract/** -text

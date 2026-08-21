@@ -1686,3 +1686,62 @@ main {
 .update-ref summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:1rem}
 .update-ref .field{margin-top:.5rem}
 .update-ref input{text-transform:uppercase}
+
+/* --- ülke kodlu telefon --- */
+.tel-grup{display:flex;gap:.5rem;align-items:stretch}
+.tel-grup .tel-cc{flex:0 0 7.2rem;min-width:7.2rem;font-variant-numeric:tabular-nums}
+.tel-grup input{flex:1;min-width:0;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+
+/* --- teşekkür ekranı --- */
+.tesekkur{text-align:center}
+.tesekkur-ic{max-width:34rem;margin:0 auto;padding:2rem 0 1rem}
+.tesekkur-tik{color:var(--accent,#1F4E4E);display:flex;justify-content:center;margin-bottom:1.25rem}
+.tesekkur h1{font-size:1.7rem;margin:0 0 .35rem}
+.tesekkur-alt{font-size:1.1rem;color:var(--muted,#6B6560);margin:0 0 1.75rem}
+.tesekkur-ref-et{font-family:ui-monospace,monospace;letter-spacing:.22em;font-size:.78rem;
+  color:var(--muted,#6B6560);text-transform:none;margin:0}
+.tesekkur .ref-number{font-size:2rem;margin:.35rem 0 1.25rem}
+.tesekkur-not{color:var(--muted,#6B6560);margin:0 auto 1.75rem;max-width:28rem}
+.tesekkur-eylem{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem}
+.tesekkur-adres{font-style:normal;font-size:.9rem;color:var(--muted,#6B6560);line-height:1.7}
+@media (max-width:600px){
+  .tesekkur-ic{padding:1.25rem 0}
+  .tesekkur h1{font-size:1.45rem}
+  .tesekkur .ref-number{font-size:1.7rem}
+  .tesekkur-eylem .button{flex:1 1 100%}
+}
+
+/* --- kimlikten otomatik okuma --- */
+.mrz-kutu{margin:1rem 0 .25rem;padding:.9rem 1rem;border:1px dashed var(--line,#D9D2C7);
+  border-radius:14px;background:var(--surface-soft,rgba(255,255,255,.55));
+  display:flex;flex-direction:column;gap:.6rem;align-items:flex-start}
+.mrz-dugme{display:inline-flex;align-items:center;gap:.55rem}
+.mrz-dugme svg{width:1.15rem;height:1.15rem;fill:currentColor;flex:0 0 auto}
+.mrz-durum{margin:0;font-size:.86rem;line-height:1.55;color:var(--muted,#6B6560)}
+.mrz-durum.mrz-basarisiz{color:var(--danger,#9B2C2C)}
+input.oto-dolu,select.oto-dolu{background:rgba(176,141,87,.12);
+  box-shadow:inset 0 0 0 1px rgba(176,141,87,.45)}
+@media (max-width:600px){
+  .mrz-kutu{align-items:stretch}
+  .mrz-dugme{justify-content:center;width:100%}
+}
+
+/* --- imza ekrani gelistirmeleri --- */
+.signature-cizgi{position:absolute;z-index:1;left:9%;right:9%;bottom:30%;height:0;
+  border-bottom:1.5px dashed rgba(31,78,78,.2);pointer-events:none;transition:opacity .18s ease}
+.signature-carpi{position:absolute;z-index:1;left:9%;bottom:calc(30% + .1rem);
+  transform:translate(-115%,0);font-size:1.35rem;line-height:1;
+  color:rgba(31,78,78,.28);pointer-events:none;transition:opacity .18s ease}
+.signature-canvas-wrap.is-cizili .signature-cizgi,
+.signature-canvas-wrap.is-cizili .signature-carpi,
+.signature-canvas-wrap.is-cizili p{opacity:0}
+.signature-canvas-wrap p{transition:opacity .18s ease}
+.signature-yon-ipucu{display:none;margin:.5rem 0 0;font-size:.82rem;text-align:center;
+  color:var(--muted,#6B6560)}
+@media (max-width:640px) and (orientation:portrait){
+  .signature-yon-ipucu{display:block}
+}
+@media (prefers-color-scheme:dark){
+  .signature-cizgi{border-bottom-color:rgba(186,225,218,.2)}
+  .signature-carpi{color:rgba(186,225,218,.28)}
+}
