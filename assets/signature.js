@@ -243,6 +243,16 @@
     return !signature.strokes.length && !(app.state && app.state.signatureData);
   };
 
+  /* Taslaktan devam edilirken imzayi durumdan geri yukler. */
+  signature.yenidenYukle = function () {
+    signature.strokes = Array.isArray(app.state.signatureStrokes)
+      ? app.state.signatureStrokes.map((stroke) => stroke.map((point) => ({ ...point })))
+      : [];
+    updatePreview();
+    updateToolbar();
+    if (signature.dialog && signature.dialog.open) render();
+  };
+
   signature.refreshLanguage = function () {
     const error = document.getElementById('signatureDialogError');
     if (error && error.textContent) error.textContent = app.t('signatureEmpty');

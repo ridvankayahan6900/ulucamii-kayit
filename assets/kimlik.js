@@ -15,15 +15,25 @@
 
   /* =============================================================
      1. BOLUM — otomatik kirpma
-     Kenar enerjisi (gradyan) satir/sutun toplamlari cikarilir; enerjinin
-     %96'sini iceren en dar pencere kartin siniri kabul edilir.
+     Kart, dokulu bir masada bile ayirt edilebilsin diye kenar enerjisi
+     yerine RENK ILE AYIRMA kullanilir: once zemin rengi kestirilir, ondan
+     yeterince ayrilan pikseller on plan sayilir, en buyuk bagli bilesen
+     kart kabul edilir. Egiklik en kucuk alanli dikdortgenden okunur ve
+     kirparken duzeltilir. Sonuc, kimlik kartinin gercek oranina (ID-1)
+     oturtulur; boylece belgedeki kimlik kutusunu tam doldurur.
      ============================================================= */
 
-  const ANALIZ_EN = 260;
-  const GURULTU_ESIGI = 14;
-  const PAY_ORANI = 0.025;
+  const ANALIZ_EN = 320;          // cozumleme cozunurlugu
+  const ID1_ORANI = 85.6 / 54;    // 1,5852 — ID-1 kart orani
+  /* Disa emniyet payi. Dusuk kontrastta (beyaz kart, beyaz masa) maske kartin
+     kenarini birkac piksel iceriden kesebiliyor; bu pay onu telafi eder.
+     Biraz masa gorunmesi, kimligin bir kosesinin kesilmesinden yeglenir. */
+  const EMNIYET_PAYI = 0.022;
 
-  function griVeri(canvas, en) {
+  /* Son kirpmanin kunyesi — denetim ve arayuz icin disari acilir. */
+  app.kartKirpSon = null;
+
+  function analizVerisi(canvas, en) {
     const oran = en / canvas.width;
     const boy = Math.max(1, Math.round(canvas.height * oran));
     const yardimci = document.createElement('canvas');
@@ -31,95 +41,338 @@
     yardimci.height = boy;
     const ctx = yardimci.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(canvas, 0, 0, en, boy);
-    const ham = ctx.getImageData(0, 0, en, boy).data;
-    const gri = new Float32Array(en * boy);
-    for (let i = 0, p = 0; i < ham.length; i += 4, p += 1) {
-      gri[p] = 0.299 * ham[i] + 0.587 * ham[i + 1] + 0.114 * ham[i + 2];
-    }
-    return { gri: gri, en: en, boy: boy };
+    return { rgb: ctx.getImageData(0, 0, en, boy).data, en: en, boy: boy };
   }
 
-  function kenarEnerjisi(veri) {
-    const gri = veri.gri;
+  function ortanca(dizi) {
+    const s = Array.prototype.slice.call(dizi).sort(function (a, b) { return a - b; });
+    return s.length ? s[s.length >> 1] : 0;
+  }
+
+  /* Zemin rengi: dort kenar seridinden ortanca. Kart nadiren kenara dayanir,
+     dolayisiyla serit neredeyse her zaman masayi gorur. */
+  function zeminKestir(veri) {
     const en = veri.en;
     const boy = veri.boy;
-    const sutun = new Float32Array(en);
-    const satir = new Float32Array(boy);
-    for (let y = 1; y < boy - 1; y += 1) {
-      for (let x = 1; x < en - 1; x += 1) {
-        const i = y * en + x;
-        const enerji = Math.abs(gri[i + 1] - gri[i - 1]) + Math.abs(gri[i + en] - gri[i - en]);
-        if (enerji < GURULTU_ESIGI) continue;
-        sutun[x] += enerji;
-        satir[y] += enerji;
-      }
+    const serit = Math.max(2, Math.round(Math.min(en, boy) * 0.07));
+    const r = [];
+    const g = [];
+    const b = [];
+    const al = function (x, y) {
+      const i = (y * en + x) * 4;
+      r.push(veri.rgb[i]); g.push(veri.rgb[i + 1]); b.push(veri.rgb[i + 2]);
+    };
+    for (let y = 0; y < boy; y += 2) {
+      for (let x = 0; x < serit; x += 2) { al(x, y); al(en - 1 - x, y); }
     }
-    return { sutun: sutun, satir: satir };
+    for (let x = 0; x < en; x += 2) {
+      for (let y = 0; y < serit; y += 2) { al(x, y); al(x, boy - 1 - y); }
+    }
+    const zemin = [ortanca(r), ortanca(g), ortanca(b)];
+    // ortalama mutlak sapma: dokulu masada esik kendiliginden yukselir
+    let toplam = 0;
+    for (let i = 0; i < r.length; i += 1) {
+      toplam += Math.abs(r[i] - zemin[0]) + Math.abs(g[i] - zemin[1]) + Math.abs(b[i] - zemin[2]);
+    }
+    return { zemin: zemin, sapma: r.length ? toplam / (r.length * 3) : 0 };
   }
 
-  function yumusat(dizi, yaricap) {
-    const sonuc = new Float32Array(dizi.length);
-    for (let i = 0; i < dizi.length; i += 1) {
-      let toplam = 0;
-      let adet = 0;
-      for (let k = -yaricap; k <= yaricap; k += 1) {
-        const j = i + k;
-        if (j < 0 || j >= dizi.length) continue;
-        toplam += dizi[j];
-        adet += 1;
+  function renkUzakligi(rgb, i, renk) {
+    const dr = rgb[i] - renk[0];
+    const dg = rgb[i + 1] - renk[1];
+    const db = rgb[i + 2] - renk[2];
+    // yesile agirlikli, goze yakin basit bir uzaklik
+    return Math.sqrt(2 * dr * dr + 4 * dg * dg + 3 * db * db) / 3;
+  }
+
+  function maskeCikar(veri, kestirim) {
+    const esik = Math.max(16, Math.min(60, kestirim.sapma * 2.6 + 10));
+    const n = veri.en * veri.boy;
+    const maske = new Uint8Array(n);
+    for (let p = 0; p < n; p += 1) {
+      if (renkUzakligi(veri.rgb, p * 4, kestirim.zemin) > esik) maske[p] = 1;
+    }
+    return maske;
+  }
+
+  /* Kare cekirdekli genisletme/asindirma (ayrilabilir, iki gecis). */
+  function morfoloji(maske, en, boy, yaricap, genislet) {
+    const ara = new Uint8Array(en * boy);
+    const sonuc = new Uint8Array(en * boy);
+    const bos = genislet ? 0 : 1;
+    for (let y = 0; y < boy; y += 1) {
+      for (let x = 0; x < en; x += 1) {
+        let deger = bos;
+        for (let k = -yaricap; k <= yaricap; k += 1) {
+          const xx = x + k;
+          if (xx < 0 || xx >= en) continue;
+          const v = maske[y * en + xx];
+          if (genislet ? v : !v) { deger = genislet ? 1 : 0; break; }
+        }
+        ara[y * en + x] = deger;
       }
-      sonuc[i] = toplam / adet;
+    }
+    for (let y = 0; y < boy; y += 1) {
+      for (let x = 0; x < en; x += 1) {
+        let deger = bos;
+        for (let k = -yaricap; k <= yaricap; k += 1) {
+          const yy = y + k;
+          if (yy < 0 || yy >= boy) continue;
+          const v = ara[yy * en + x];
+          if (genislet ? v : !v) { deger = genislet ? 1 : 0; break; }
+        }
+        sonuc[y * en + x] = deger;
+      }
     }
     return sonuc;
   }
 
-  function enerjiSiniri(dizi, pay) {
-    let toplam = 0;
-    for (let i = 0; i < dizi.length; i += 1) toplam += dizi[i];
-    if (toplam <= 0) return null;
-    const esik = toplam * pay;
-    let birikim = 0;
-    let bas = 0;
-    let son = dizi.length - 1;
-    for (let i = 0; i < dizi.length; i += 1) {
-      birikim += dizi[i];
-      if (birikim >= esik) { bas = i; break; }
+  /* En buyuk 4-komsulu bagli bileseni dondurur (yigin tabanli, ozyineleme yok). */
+  function enBuyukBilesen(maske, en, boy) {
+    const etiket = new Int32Array(en * boy).fill(-1);
+    const yigin = new Int32Array(en * boy);
+    let enIyi = null;
+    let enIyiAdet = 0;
+    let sira = 0;
+    for (let bas = 0; bas < maske.length; bas += 1) {
+      if (!maske[bas] || etiket[bas] >= 0) continue;
+      let ucu = 0;
+      yigin[ucu++] = bas;
+      etiket[bas] = sira;
+      let adet = 0;
+      const kendi = [];
+      while (ucu > 0) {
+        const p = yigin[--ucu];
+        adet += 1;
+        kendi.push(p);
+        const x = p % en;
+        const y = (p / en) | 0;
+        if (x > 0 && maske[p - 1] && etiket[p - 1] < 0) { etiket[p - 1] = sira; yigin[ucu++] = p - 1; }
+        if (x < en - 1 && maske[p + 1] && etiket[p + 1] < 0) { etiket[p + 1] = sira; yigin[ucu++] = p + 1; }
+        if (y > 0 && maske[p - en] && etiket[p - en] < 0) { etiket[p - en] = sira; yigin[ucu++] = p - en; }
+        if (y < boy - 1 && maske[p + en] && etiket[p + en] < 0) { etiket[p + en] = sira; yigin[ucu++] = p + en; }
+      }
+      if (adet > enIyiAdet) { enIyiAdet = adet; enIyi = kendi; }
+      sira += 1;
     }
-    birikim = 0;
-    for (let i = dizi.length - 1; i >= 0; i -= 1) {
-      birikim += dizi[i];
-      if (birikim >= esik) { son = i; break; }
+    return { pikseller: enIyi, adet: enIyiAdet };
+  }
+
+  /* Konveks kabuk icin her satirin yalniz en sol ve en sag pikseli yeter. */
+  function uctakiNoktalar(pikseller, en) {
+    const sol = new Map();
+    const sag = new Map();
+    for (let i = 0; i < pikseller.length; i += 1) {
+      const p = pikseller[i];
+      const x = p % en;
+      const y = (p / en) | 0;
+      if (!sol.has(y) || x < sol.get(y)) sol.set(y, x);
+      if (!sag.has(y) || x > sag.get(y)) sag.set(y, x);
     }
-    return son > bas ? [bas, son] : null;
+    const noktalar = [];
+    sol.forEach(function (x, y) { noktalar.push([x, y]); });
+    sag.forEach(function (x, y) { noktalar.push([x, y]); });
+    return noktalar;
+  }
+
+  function konveksKabuk(noktalar) {
+    if (noktalar.length < 3) return noktalar.slice();
+    const p = noktalar.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    const capraz = function (o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); };
+    const alt = [];
+    for (let i = 0; i < p.length; i += 1) {
+      while (alt.length >= 2 && capraz(alt[alt.length - 2], alt[alt.length - 1], p[i]) <= 0) alt.pop();
+      alt.push(p[i]);
+    }
+    const ust = [];
+    for (let i = p.length - 1; i >= 0; i -= 1) {
+      while (ust.length >= 2 && capraz(ust[ust.length - 2], ust[ust.length - 1], p[i]) <= 0) ust.pop();
+      ust.push(p[i]);
+    }
+    alt.pop(); ust.pop();
+    return alt.concat(ust);
+  }
+
+  /* Donen kaliperler: her kabuk kenari icin dondurulmus sinir kutusu, en kucugu alinir. */
+  function enKucukDikdortgen(kabuk) {
+    if (kabuk.length < 3) return null;
+    let enIyi = null;
+    for (let i = 0; i < kabuk.length; i += 1) {
+      const a = kabuk[i];
+      const b = kabuk[(i + 1) % kabuk.length];
+      const aci = Math.atan2(b[1] - a[1], b[0] - a[0]);
+      const c = Math.cos(-aci);
+      const s = Math.sin(-aci);
+      let enAzX = Infinity, enCokX = -Infinity, enAzY = Infinity, enCokY = -Infinity;
+      for (let j = 0; j < kabuk.length; j += 1) {
+        const x = kabuk[j][0] * c - kabuk[j][1] * s;
+        const y = kabuk[j][0] * s + kabuk[j][1] * c;
+        if (x < enAzX) enAzX = x;
+        if (x > enCokX) enCokX = x;
+        if (y < enAzY) enAzY = y;
+        if (y > enCokY) enCokY = y;
+      }
+      const g = enCokX - enAzX;
+      const b2 = enCokY - enAzY;
+      const alan = g * b2;
+      if (!enIyi || alan < enIyi.alan) {
+        const mx = (enAzX + enCokX) / 2;
+        const my = (enAzY + enCokY) / 2;
+        enIyi = {
+          alan: alan, g: g, b: b2, aci: aci,
+          merkez: [mx * c + my * s, -mx * s + my * c]   // ters donusum
+        };
+      }
+    }
+    return enIyi;
+  }
+
+  /* Kartin kendi rengini kullanarak kutuyu disa dogru buyutur: kartin basilmamis
+     beyaz kenari maskeye girmemis olabilir, onu geri kazanir. */
+  function kartaGoreBuyut(veri, kutu, kartRenk, zeminRenk) {
+    const en = veri.en;
+    const boy = veri.boy;
+    const enCokAdim = Math.round(Math.max(en, boy) * 0.06);
+    const kartMi = function (i) {
+      return renkUzakligi(veri.rgb, i, kartRenk) < renkUzakligi(veri.rgb, i, zeminRenk);
+    };
+    const satirKartMi = function (y, x0, x1) {
+      let sayac = 0, toplam = 0;
+      for (let x = x0; x <= x1; x += 1) { toplam += 1; if (kartMi((y * en + x) * 4)) sayac += 1; }
+      return toplam > 0 && sayac / toplam >= 0.55;
+    };
+    const sutunKartMi = function (x, y0, y1) {
+      let sayac = 0, toplam = 0;
+      for (let y = y0; y <= y1; y += 1) { toplam += 1; if (kartMi((y * en + x) * 4)) sayac += 1; }
+      return toplam > 0 && sayac / toplam >= 0.55;
+    };
+    let [x0, y0, x1, y1] = kutu;
+    for (let k = 0; k < enCokAdim && y0 > 0 && satirKartMi(y0 - 1, x0, x1); k += 1) y0 -= 1;
+    for (let k = 0; k < enCokAdim && y1 < boy - 1 && satirKartMi(y1 + 1, x0, x1); k += 1) y1 += 1;
+    for (let k = 0; k < enCokAdim && x0 > 0 && sutunKartMi(x0 - 1, y0, y1); k += 1) x0 -= 1;
+    for (let k = 0; k < enCokAdim && x1 < en - 1 && sutunKartMi(x1 + 1, y0, y1); k += 1) x1 += 1;
+    return [x0, y0, x1, y1];
+  }
+
+  function medyanRenk(veri, kutu) {
+    const en = veri.en;
+    const r = [], g = [], b = [];
+    for (let y = kutu[1]; y <= kutu[3]; y += 2) {
+      for (let x = kutu[0]; x <= kutu[2]; x += 2) {
+        const i = (y * en + x) * 4;
+        r.push(veri.rgb[i]); g.push(veri.rgb[i + 1]); b.push(veri.rgb[i + 2]);
+      }
+    }
+    return [ortanca(r), ortanca(g), ortanca(b)];
   }
 
   /* Kirpilmis yeni canvas dondurur; guvenli davranamazsa aynisini verir. */
   app.kartKirp = function (canvas) {
+    app.kartKirpSon = null;
     try {
-      if (!canvas || canvas.width < 200 || canvas.height < 120) return canvas;
-      const veri = griVeri(canvas, Math.min(ANALIZ_EN, canvas.width));
-      const enerji = kenarEnerjisi(veri);
-      const yatay = enerjiSiniri(yumusat(enerji.sutun, 2), 0.02);
-      const dikey = enerjiSiniri(yumusat(enerji.satir, 2), 0.02);
-      if (!yatay || !dikey) return canvas;
+      if (!canvas || canvas.width < 240 || canvas.height < 160) return canvas;
+
+      const analizEn = Math.min(ANALIZ_EN, canvas.width);
+      const veri = analizVerisi(canvas, analizEn);
+      const kestirim = zeminKestir(veri);
+
+      let maske = maskeCikar(veri, kestirim);
+      const yaricap = Math.max(1, Math.round(analizEn * 0.012));
+      maske = morfoloji(maske, veri.en, veri.boy, yaricap, true);      // kapama: genislet
+      maske = morfoloji(maske, veri.en, veri.boy, yaricap, false);     //         + asindir
+      maske = morfoloji(maske, veri.en, veri.boy, 1, false);           // acma: benekleri at
+      maske = morfoloji(maske, veri.en, veri.boy, 1, true);
+
+      const bilesen = enBuyukBilesen(maske, veri.en, veri.boy);
+      if (!bilesen.pikseller || bilesen.adet < veri.en * veri.boy * 0.03) return canvas;
+
+      // eksene paralel sinir kutusu
+      let x0 = veri.en, y0 = veri.boy, x1 = 0, y1 = 0;
+      for (let i = 0; i < bilesen.pikseller.length; i += 1) {
+        const p = bilesen.pikseller[i];
+        const x = p % veri.en;
+        const y = (p / veri.en) | 0;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+
+      // kartin kendi rengiyle disa dogru buyut (basilmamis beyaz kenar)
+      const kartRenk = medyanRenk(veri, [x0, y0, x1, y1]);
+      const buyutulmus = kartaGoreBuyut(veri, [x0, y0, x1, y1], kartRenk, kestirim.zemin);
+      x0 = buyutulmus[0]; y0 = buyutulmus[1]; x1 = buyutulmus[2]; y1 = buyutulmus[3];
+
+      // egiklik: en kucuk alanli dikdortgenden
+      const kabuk = konveksKabuk(uctakiNoktalar(bilesen.pikseller, veri.en));
+      const enKucuk = enKucukDikdortgen(kabuk);
+      const tani = { kabukN: kabuk.length, hamAci: enKucuk ? Number((enKucuk.aci * 180 / Math.PI).toFixed(2)) : null,
+                     dikG: enKucuk ? Math.round(enKucuk.g) : null, dikB: enKucuk ? Math.round(enKucuk.b) : null, red: '' };
+      let aci = 0;
+      if (enKucuk) {
+        let a = enKucuk.aci;
+        while (a > Math.PI / 4) a -= Math.PI / 2;
+        while (a < -Math.PI / 4) a += Math.PI / 2;
+        if (Math.abs(a) > 0.026 && Math.abs(a) < 0.27) aci = a;   // 1,5° – 15,5°
+      }
 
       const olcek = canvas.width / veri.en;
-      let x = yatay[0] * olcek;
-      let g = (yatay[1] - yatay[0] + 1) * olcek;
-      let y = dikey[0] * olcek;
-      let b = (dikey[1] - dikey[0] + 1) * olcek;
+      let merkezX = ((x0 + x1) / 2 + 0.5) * olcek;
+      let merkezY = ((y0 + y1) / 2 + 0.5) * olcek;
+      let g = (x1 - x0 + 1) * olcek;
+      let b = (y1 - y0 + 1) * olcek;
 
-      const payX = g * PAY_ORANI;
-      const payY = b * PAY_ORANI;
-      x = Math.max(0, x - payX);
-      y = Math.max(0, y - payY);
-      g = Math.min(canvas.width - x, g + payX * 2);
-      b = Math.min(canvas.height - y, b + payY * 2);
+      // egiklik duzeltilecekse dikdortgenin gercek olculerini kullan
+      if (aci !== 0 && enKucuk) {
+        const eg = Math.max(enKucuk.g, enKucuk.b) * olcek;
+        const kg = Math.min(enKucuk.g, enKucuk.b) * olcek;
+        // dondurulmus kutu eksene paralel kutudan buyuk olmamali
+        tani.eg = Math.round(eg); tani.kg = Math.round(kg); tani.aabbG = Math.round(g); tani.aabbB = Math.round(b);
+        if (eg <= g * 1.02 && kg <= b * 1.02) {
+          g = eg;
+          b = kg;
+          merkezX = (enKucuk.merkez[0] + 0.5) * olcek;
+          merkezY = (enKucuk.merkez[1] + 0.5) * olcek;
+        } else {
+          tani.red = 'dikdortgen aabb den buyuk';
+          aci = 0;
+        }
+      } else if (!aci) {
+        tani.red = tani.red || 'aci kapisi';
+      }
 
-      const oranG = g / canvas.width;
-      const oranB = b / canvas.height;
-      if (oranG < 0.3 || oranB < 0.25) return canvas;          // fazla agresif, guvenme
-      if (oranG > 0.95 && oranB > 0.95) return canvas;         // kirpilacak kenar yok
+      /* Emniyet payi guvene gore ayarlanir. Kartin rengi masanin renginden ne
+         kadar az ayriliyorsa maske o kadar iceriden kesiyor demektir; boyle
+         durumda payi buyutup kartin kenarini kurtariyoruz. */
+      const ayrim = renkUzakligi([kartRenk[0], kartRenk[1], kartRenk[2], 255], 0, kestirim.zemin);
+      const belirsizlik = Math.max(0, Math.min(1, (50 - ayrim) / 50));
+      const pay = EMNIYET_PAYI * (1 + belirsizlik);
+      tani.ayrim = Math.round(ayrim);
+      tani.pay = Number(pay.toFixed(3));
+      g *= 1 + pay * 2;
+      b *= 1 + pay * 2;
+
+      // --- guvenlik kapilari ---
+      const alanOrani = (g * b) / (canvas.width * canvas.height);
+      if (alanOrani < 0.05 || alanOrani > 0.99) return canvas;
+      const oran = g / b;
+      if (oran < 1.15 || oran > 2.4) return canvas;               // karta benzemiyor
+
+      // ID-1 oranina oturt: makul yakinliktaysa kisa kenari acarak tam orana getir
+      if (Math.abs(oran - ID1_ORANI) / ID1_ORANI <= 0.22) {
+        if (oran < ID1_ORANI) g = b * ID1_ORANI;
+        else b = g / ID1_ORANI;
+      }
+
+      // cerceve disina tasmasin (egiklik yoksa kirp, varsa bos alan beyaz kalir)
+      if (aci === 0) {
+        const yeniG = Math.min(g, canvas.width);
+        const yeniB = Math.min(b, canvas.height);
+        merkezX = Math.min(canvas.width - yeniG / 2, Math.max(yeniG / 2, merkezX));
+        merkezY = Math.min(canvas.height - yeniB / 2, Math.max(yeniB / 2, merkezY));
+        g = yeniG;
+        b = yeniB;
+      }
 
       const hedef = document.createElement('canvas');
       hedef.width = Math.max(1, Math.round(g));
@@ -127,10 +380,21 @@
       const ctx = hedef.getContext('2d', { alpha: false });
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, hedef.width, hedef.height);
-      ctx.drawImage(canvas, Math.round(x), Math.round(y), hedef.width, hedef.height,
-        0, 0, hedef.width, hedef.height);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.translate(hedef.width / 2, hedef.height / 2);
+      if (aci !== 0) ctx.rotate(-aci);
+      ctx.drawImage(canvas, -merkezX, -merkezY);
+
+      app.kartKirpSon = {
+        x: Math.round(merkezX - g / 2), y: Math.round(merkezY - b / 2),
+        g: Math.round(g), b: Math.round(b),
+        aci: Number((aci * 180 / Math.PI).toFixed(2)),
+        oran: Number((hedef.width / hedef.height).toFixed(3)),
+        tani: tani
+      };
       return hedef;
     } catch (_) {
+      app.kartKirpSon = null;
       return canvas;
     }
   };

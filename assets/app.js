@@ -3,6 +3,14 @@
 
   const app = window.KayitApp = window.KayitApp || {};
   const DRAFT_KEY = 'uluCamiiKayitDraft:v1';
+  /* Yalnizca aileye ait alanlar; cocuga ozel hicbir sey buraya yazilmaz. */
+  const VELI_KEY = 'uluCamiiVeliProfili:v1';
+  const VELI_ALANLARI = [
+    'relationship', 'guardianName', 'occupation',
+    'guardianPhone', 'guardianPhoneCC', 'homePhone', 'homePhoneCC', 'guardianEmail',
+    'streetName', 'houseNumber', 'boxNumber', 'postalCode', 'city',
+    'emergencyName', 'emergencyPhone', 'emergencyPhoneCC'
+  ];
   const LANGUAGE_KEY = 'uluCamiiKayitLanguage';
   const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
   const MAX_IMAGE_EDGE = 1600;
@@ -24,6 +32,51 @@
     }
   }
 
+  function storageRemove(key) {
+    try { localStorage.removeItem(key); } catch (_) { /* storage unavailable */ }
+  }
+
+  /* --- veli profili -------------------------------------------------
+     Kardes kaydinda veli bilgilerini yeniden yazdirmamak icindir. Cocuga
+     ozel veri (ad, dogum, kimlik, saglik, imza, gorseller) ASLA girmez. */
+  function veliProfiliOku() {
+    const ham = storageGet(VELI_KEY);
+    if (!ham) return null;
+    try {
+      const p = JSON.parse(ham);
+      return p && p.alanlar && p.alanlar.guardianName ? p : null;
+    } catch (_) { return null; }
+  }
+
+  function veliProfiliYaz(sonReferans) {
+    const onceki = veliProfiliOku();
+    const alanlar = {};
+    VELI_ALANLARI.forEach((ad) => {
+      const deger = app.state.fields[ad];
+      if (deger !== undefined && deger !== null && String(deger) !== '') alanlar[ad] = deger;
+    });
+    if (!alanlar.guardianName) return;
+    storageSet(VELI_KEY, JSON.stringify({
+      surum: 1,
+      alanlar: alanlar,
+      cocukSayisi: (onceki && Number(onceki.cocukSayisi) ? Number(onceki.cocukSayisi) : 0) + 1,
+      sonReferans: sonReferans || (onceki && onceki.sonReferans) || ''
+    }));
+  }
+
+  function veliProfiliSil() {
+    storageRemove(VELI_KEY);
+  }
+
+  /* {ad} gibi yer tutuculari dolduran kucuk metin yardimcisi. */
+  function metin(anahtar, degerler) {
+    let cikti = app.t(anahtar);
+    Object.keys(degerler || {}).forEach((k) => {
+      cikti = cikti.split('{' + k + '}').join(degerler[k]);
+    });
+    return cikti;
+  }
+
   function localDate() {
     const now = new Date();
     const year = now.getFullYear();
@@ -36,6 +89,9 @@
     return {
       version: 1,
       currentStep: 1,
+      /* Karsilama ekranina (0) donmek taslaktaki ilerlemeyi silmesin diye
+         formda ulasilan son adim ayrica tutulur. */
+      sonAdim: 1,
       fields: { declarationDate: localDate() },
       images: { identityFront: '', identityBack: '', studentPhoto: '' },
       contractRead: false,
@@ -57,6 +113,10 @@
         state: {
           ...base,
           ...stored,
+          /* Kayitli taslakta yalnizca currentStep var; sonAdim ondan tohumlanir.
+             Aksi halde karsilama ekranindan yapilan ilk kayit ilerlemeyi 1'e
+             geri cekerdi. */
+          sonAdim: Math.max(1, Math.min(7, Number(stored.currentStep) || 1)),
           fields: { ...base.fields, ...(stored.fields || {}) },
           images: { ...base.images, ...(stored.images || {}) },
           signatureStrokes: Array.isArray(stored.signatureStrokes) ? stored.signatureStrokes : []
@@ -83,7 +143,7 @@
   function draftPayload(includeImages) {
     return {
       version: 1,
-      currentStep: Math.max(1, Math.min(7, app.state.currentStep || 1)),
+      currentStep: Math.max(1, Math.min(7, app.state.sonAdim || app.state.currentStep || 1)),
       fields: app.state.fields,
       images: includeImages ? app.state.images : { identityFront: '', identityBack: '', studentPhoto: '' },
       contractRead: app.state.contractRead,
@@ -132,6 +192,9 @@
       button.setAttribute('aria-pressed', String(selected));
     });
     document.getElementById('declarationText').textContent = app.declaration[app.lang];
+    if (typeof telOrnekleriniYenile === 'function') telOrnekleriniYenile();
+    if (typeof sozlesmeOnayiniYenile === 'function') sozlesmeOnayiniYenile();
+    if (app.ready && typeof renderKarsilama === 'function') renderKarsilama();
     renderSchools();
     renderContract();
     updateProgress();
@@ -297,6 +360,51 @@
     }
   }
 
+  /* Formu ve DURUMU tamamen sifirlar. Yalnizca DOM'u bosaltmak yetmez:
+     app.state hala eski taslagi tasiyor olurdu ve gonderimde eski degerler
+     giderdi. Istege bagli olarak veli profili yeniden doldurulur. */
+  function temizDurum(veliDoldur) {
+    const tarih = app.state && app.state.fields ? app.state.fields.declarationDate : null;
+    app.state = defaultState();
+    if (tarih) app.state.fields.declarationDate = tarih;
+    let profil = null;
+    if (veliDoldur) {
+      profil = veliProfiliOku();
+      if (profil) Object.assign(app.state.fields, profil.alanlar);
+    }
+    // imza ve gorseller her cocukta yeniden alinir
+    if (app.signature) {
+      app.signature.strokes = [];
+      if (typeof app.signature.clear === 'function') app.signature.clear();
+    }
+    app.lastPdf = null;
+    const form = document.getElementById('registrationForm');
+    [...form.elements].forEach((element) => {
+      if (!element.name || element.type === 'file') return;
+      // Guncelleme numarasi bir form alani degil, karsilama ekranindaki bir
+      // denetimdir; veli oraya yazdiktan sonra "Kayda basla" onu silmemeli.
+      if (element.id === 'updateRef') return;
+      if (element.type === 'radio' || element.type === 'checkbox') element.checked = false;
+      else if (element.tagName !== 'SELECT') element.value = '';
+      else element.selectedIndex = 0;
+      element.classList.remove('oto-dolu');
+    });
+    restoreFields();
+    if (profil) {
+      Object.keys(profil.alanlar).forEach((ad) => {
+        const alan = document.getElementById(ad);
+        if (alan) alan.classList.add('oto-dolu');
+      });
+    }
+    updateImageUI();
+    updateDeclaration();
+    sozlesmeOnayiniYenile();
+    const not = document.getElementById('prefillNote');
+    if (not) not.hidden = !profil;
+    app.saveDraft();
+    return Boolean(profil);
+  }
+
   function restoreFields() {
     const form = document.getElementById('registrationForm');
     [...form.elements].forEach((element) => {
@@ -341,6 +449,7 @@
         clearElementError(target);
         updateConditionalFields();
         updateDeclaration();
+        if (target.id === 'studentName' || target.id === 'studentSurname') sozlesmeOnayiniYenile();
         scheduleSave();
       });
     });
@@ -412,22 +521,36 @@
   /* --- ulke kodlu telefon ---------------------------------------
      Numara ulusal bicimde tutulur (bas sifir yok), ulke kodu ayri
      alanda durur. Gruplama yalnizca gorunumdur; gonderimde E.164. */
+  /* ornek: her ulkenin gercek numara bicimine uyan, ama apacik uydurma bir dizi.
+     UK icin Ofcom'un dramalara ayirdigi 7700 900xxx araligi kullanilir. */
   const TEL_ULKE = {
-    '32':  { min: 8,  max: 9,  grup: (d) => (d.charAt(0) === '4' ? [3, 2, 2, 2] : ('239'.indexOf(d.charAt(0)) >= 0 ? [1, 3, 2, 2] : [2, 2, 2, 2])) },
-    '90':  { min: 10, max: 10, grup: () => [3, 3, 2, 2] },
-    '33':  { min: 9,  max: 9,  grup: () => [1, 2, 2, 2, 2] },
-    '31':  { min: 9,  max: 9,  grup: () => [1, 4, 4] },
-    '49':  { min: 6,  max: 11, grup: () => [4, 4, 4, 4] },
-    '352': { min: 6,  max: 9,  grup: () => [3, 3, 3] },
-    '44':  { min: 9,  max: 10, grup: () => [4, 3, 3] },
-    '39':  { min: 9,  max: 10, grup: () => [3, 3, 4] },
-    '34':  { min: 9,  max: 9,  grup: () => [3, 3, 3] },
-    '212': { min: 9,  max: 9,  grup: () => [3, 3, 3] }
+    '32':  { min: 8,  max: 9,  ornek: '470000000',  grup: (d) => (d.charAt(0) === '4' ? [3, 2, 2, 2] : ('239'.indexOf(d.charAt(0)) >= 0 ? [1, 3, 2, 2] : [2, 2, 2, 2])) },
+    '90':  { min: 10, max: 10, ornek: '5000000000', grup: () => [3, 3, 2, 2] },
+    '33':  { min: 9,  max: 9,  ornek: '600000000',  grup: () => [1, 2, 2, 2, 2] },
+    '31':  { min: 9,  max: 9,  ornek: '600000000',  grup: () => [1, 4, 4] },
+    '49':  { min: 6,  max: 11, ornek: '1500000000', grup: () => [4, 4, 4, 4] },
+    '352': { min: 6,  max: 9,  ornek: '621000000',  grup: () => [3, 3, 3] },
+    '44':  { min: 9,  max: 10, ornek: '7700900000', grup: () => [4, 3, 3] },
+    '39':  { min: 9,  max: 10, ornek: '3000000000', grup: () => [3, 3, 4] },
+    '34':  { min: 9,  max: 9,  ornek: '600000000',  grup: () => [3, 3, 3] },
+    '212': { min: 9,  max: 9,  ornek: '600000000',  grup: () => [3, 3, 3] }
   };
   const TEL_ALANLARI = ['studentPhone', 'emergencyPhone', 'homePhone', 'guardianPhone'];
 
   function telAyar(kod) {
-    return TEL_ULKE[String(kod || '32')] || { min: 7, max: 13, grup: () => [3, 3, 3, 3] };
+    return TEL_ULKE[String(kod || '32')] || { min: 7, max: 13, ornek: '600000000', grup: () => [3, 3, 3, 3] };
+  }
+
+  /* Ornek numarayi secili ulke koduna gore tazeler. Placeholder'da gercek bir
+     numara durmasi veliyi yaniltiyordu; artik "Örn." on ekiyle apacik uydurma. */
+  function telOrnekleriniYenile() {
+    TEL_ALANLARI.forEach((id) => {
+      const girdi = document.getElementById(id);
+      const kod = document.getElementById(`${id}CC`);
+      if (!girdi || !kod) return;
+      const ayar = telAyar(kod.value);
+      girdi.placeholder = `${app.t('ornekOnEki')} ${telBicimle(ayar.ornek, kod.value)}`;
+    });
   }
 
   function telBicimle(ham, kod) {
@@ -474,9 +597,10 @@
         try { girdi.setSelectionRange(poz, poz); } catch (_) { /* desteklenmiyor */ }
       };
       girdi.addEventListener('input', () => uygula(true));
-      kod.addEventListener('change', () => uygula(true));
+      kod.addEventListener('change', () => { uygula(true); telOrnekleriniYenile(); });
       uygula(false);
     });
+    telOrnekleriniYenile();
   }
 
   /* Ulke kodunun tek dogru kaynagi ekrandaki acilir listedir; durum yalnizca
@@ -604,6 +728,7 @@
       section.classList.toggle('is-active', active);
     });
     app.state.currentStep = target;
+    if (target >= 1) app.state.sonAdim = target;
     updateProgress();
     updateNavigation();
     if (target === 5) requestAnimationFrame(updateContractScroll);
@@ -619,6 +744,16 @@
       }
     }
   };
+
+  /* Cok cocuklu ailelerde yanlis cocuk icin imzalamayi onlemek uzere onay
+     satirina cocugun adi yazilir. */
+  function sozlesmeOnayiniYenile() {
+    const alan = document.getElementById('contractAcceptText');
+    if (!alan) return;
+    const f = app.state.fields || {};
+    const ad = [f.studentName, f.studentSurname].filter(Boolean).join(' ').trim();
+    alan.textContent = ad ? metin('contractAcceptNamed', { ad: ad }) : app.t('contractAccept');
+  }
 
   function updateDeclaration() {
     const guardian = app.state.fields.guardianName || '—';
@@ -943,55 +1078,88 @@
     return btoa(ikili);
   }
 
-  async function submitRegistration() {
-    if (!app.lastPdf) return;
+  /* Tek eylem: belge hazirlanir ve hemen gonderilir. Veli "once PDF olustur,
+     sonra gonder" ikilemini hic gormez; ne olup bittigini durum satiri anlatir. */
+  async function kaydiGonder() {
     const ayar = window.GONDERIM || {};
-    if (!ayar.ucNokta) return;
     const dugme = document.getElementById('submitButton');
+    const durum = document.getElementById('gonderDurum');
     const hata = document.getElementById('submitError');
+    const pdfHata = document.getElementById('pdfError');
+    const yedek = document.getElementById('gonderYedek');
     hata.textContent = '';
-    dugme.disabled = true;
-    dugme.setAttribute('aria-busy', 'true');
-    dugme.textContent = app.t('submitting');
-    let basarili = false;
+    pdfHata.textContent = '';
+
     if (!guncellenenRefGecerliMi()) {
       hata.textContent = app.t('updateRefInvalid');
-      dugme.disabled = false;
-      dugme.removeAttribute('aria-busy');
-      dugme.textContent = app.t('submitRegistration');
-      document.getElementById('updateRefBox').open = true;
-      document.getElementById('updateRef').focus();
+      app.goToStep(0);
+      const kutu = document.getElementById('updateRefBox');
+      if (kutu) kutu.open = true;
+      const alan = document.getElementById('updateRef');
+      if (alan) alan.focus();
       return;
     }
+
+    dugme.disabled = true;
+    dugme.setAttribute('aria-busy', 'true');
+    durum.hidden = false;
+    let basarili = false;
     try {
+      durum.textContent = app.t('hazirlaniyor');
+      app.lastPdf = await app.createPdf();
+
+      if (!ayar.ucNokta) throw new Error('uc-nokta-yok');
+      durum.textContent = app.t('gonderiliyor');
       const govde = gonderimGovdesi(base64Cevir(app.lastPdf.bytes));
-      const metin = JSON.stringify(govde);
-      if (metin.length > 9 * 1024 * 1024) throw new Error('cok-buyuk');
+      const govdeMetni = JSON.stringify(govde);
+      if (govdeMetni.length > 9 * 1024 * 1024) throw new Error('cok-buyuk');
       const cevap = await fetch(ayar.ucNokta, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: metin,
+        body: govdeMetni,
         redirect: 'follow'
       });
       const sonuc = JSON.parse(await cevap.text());
       if (!sonuc.ok) throw new Error(sonuc.hata || 'sunucu-hatasi');
+
       basarili = true;
       app.state.submittedRef = sonuc.ref;
-      if (typeof app.saveDraft === 'function') app.saveDraft();
+      /* Kayit artik sunucuda: taslak SILINIR, yalnizca veli profili saklanir.
+         Aksi halde ikinci cocuk kaydinda birincinin bilgileri geri gelirdi. */
+      veliProfiliYaz(sonuc.ref);
+      storageRemove(DRAFT_KEY);
+      durum.hidden = true;
       tesekkurGoster(sonuc.ref, sonuc.guncelleme);
     } catch (error) {
       console.error(error);
+      durum.hidden = true;
       const kod = String(error.message || '');
-      hata.textContent = kod === 'cok-buyuk' ? app.t('submitTooBig')
-        : kod === 'yetkisiz' ? app.t('submitUnauthorized')
-        : app.t('submitFailed');
-      document.getElementById('shareFallback').hidden = false;
-      dugme.textContent = app.t('submitRetry');
+      if (!app.lastPdf) {
+        pdfHata.textContent = app.t('pdfError');
+      } else {
+        hata.textContent = kod === 'cok-buyuk' ? app.t('submitTooBig')
+          : kod === 'yetkisiz' ? app.t('submitUnauthorized')
+          : app.t('submitFailed');
+        yedekleriHazirla();
+        yedek.hidden = false;
+        dugme.textContent = app.t('submitRetry');
+      }
     } finally {
       dugme.disabled = false;
       dugme.removeAttribute('aria-busy');
-      if (!basarili && dugme.textContent === app.t('submitting')) dugme.textContent = app.t('submitRegistration');
+      if (!basarili && dugme.textContent !== app.t('submitRetry')) dugme.textContent = app.t('submitRegistration');
     }
+  }
+
+  /* Gonderim basarisiz olursa beliren yedek yollar. */
+  function yedekleriHazirla() {
+    if (!app.lastPdf) return;
+    const paylasilabilir = navigator.share && navigator.canShare
+      && navigator.canShare({ files: [app.lastPdf.file] });
+    document.getElementById('sharePdfButton').hidden = !paylasilabilir;
+    const konu = encodeURIComponent(`${CAMI.name} – ${app.t('pdfDocumentTitle')}`);
+    const govde = encodeURIComponent(`${app.t('emailAttachNote')}\n\n${CAMI.name}\n${CAMI.address}`);
+    document.getElementById('emailPdfLink').href = `mailto:${CAMI.email}?subject=${konu}&body=${govde}`;
   }
 
   /* --- kimlikten otomatik doldurma ------------------------------
@@ -1064,6 +1232,63 @@
     }
   }
 
+  /* Kardes kaydi her zaman YENI bir kayittir; onceki referans tasinmaz. */
+  function guncellemeNumarasiniTemizle() {
+    const alan = document.getElementById('updateRef');
+    if (alan) alan.value = '';
+    const kutu = document.getElementById('updateRefBox');
+    if (kutu) kutu.open = false;
+    if (app.state && app.state.fields) app.state.fields.updateRef = '';
+  }
+
+  /* Karsilama ekrani: yarim kalan kayit ve kardes kaydi ayri ayri, ACIKCA
+     secilen yollardir. Hicbiri kendiliginden forma dolmaz. */
+  function renderKarsilama() {
+    const draftKart = document.getElementById('draftCard');
+    const kardesKart = document.getElementById('siblingCard');
+    const basla = document.getElementById('startButton');
+    if (!draftKart || !kardesKart || !basla) return;
+
+    const taslak = readDraft();
+    const alanlar = taslak.state.fields || {};
+    const gorseller = taslak.state.images || {};
+    const taslakVar = taslak.restored
+      && Number(taslak.state.currentStep) >= 1
+      && Boolean(alanlar.studentSurname || alanlar.studentName || alanlar.guardianName
+        || gorseller.identityFront || gorseller.identityBack);
+    const profil = veliProfiliOku();
+
+    draftKart.hidden = !taslakVar;
+    kardesKart.hidden = taslakVar || !profil;
+    basla.hidden = taslakVar;
+
+    if (taslakVar) {
+      const ad = [alanlar.studentName, alanlar.studentSurname].filter(Boolean).join(' ').trim();
+      const adim = app.t('step' + Math.max(1, Math.min(7, Number(taslak.state.currentStep) || 1)) + 'Name');
+      document.getElementById('draftCardBody').textContent = ad
+        ? metin('draftCardBody', { ad: ad, adim: adim })
+        : metin('draftCardBodyAnon', { adim: adim });
+      return;
+    }
+
+    if (profil) {
+      const ikinci = Number(profil.cocukSayisi) <= 1;
+      document.getElementById('siblingCardTitle').textContent = app.t(ikinci ? 'siblingTitle2' : 'siblingTitleN');
+      document.getElementById('siblingYesButton').textContent = app.t(ikinci ? 'siblingYes2' : 'siblingYesN');
+      document.getElementById('siblingCardBody').textContent =
+        metin('siblingBody', { veli: profil.alanlar.guardianName || '' });
+      basla.textContent = app.t('startFresh');
+      basla.classList.remove('button-primary');
+      basla.classList.add('button-secondary');
+      const ref = document.getElementById('updateRef');
+      if (ref && !ref.value && profil.sonReferans) ref.placeholder = profil.sonReferans;
+    } else {
+      basla.textContent = app.t('startRegistration');
+      basla.classList.add('button-primary');
+      basla.classList.remove('button-secondary');
+    }
+  }
+
   /* Tum adimlarin yerine gecen tek kapanis ekrani. */
   function tesekkurGoster(ref, guncelleme) {
     const ekran = document.getElementById('tesekkurEkrani');
@@ -1075,6 +1300,11 @@
     if (gezinme) gezinme.hidden = true;
     const referans = document.getElementById('refNumber');
     if (referans) referans.textContent = ref || '';
+    const profil = veliProfiliOku();
+    const kardes = document.getElementById('tesekkurKardes');
+    if (kardes) {
+      kardes.textContent = app.t(profil && Number(profil.cocukSayisi) > 1 ? 'tesekkurKardesN' : 'tesekkurKardes2');
+    }
     const baslik = document.getElementById('tesekkurBaslik');
     if (baslik) baslik.textContent = guncelleme ? app.t('tesekkurBaslikGuncelleme') : app.t('tesekkurBaslik');
     ekran.hidden = false;
@@ -1105,49 +1335,47 @@
         if (error.name !== 'AbortError') app.showToast(app.t('shareUnsupported'));
       }
     } else {
-      document.getElementById('shareFallback').hidden = false;
+      app.showToast(app.t('shareUnsupported'));
       downloadPdf();
-    }
-  }
-
-  async function generatePdf() {
-    const button = document.getElementById('createPdfButton');
-    const error = document.getElementById('pdfError');
-    error.textContent = '';
-    button.disabled = true;
-    button.setAttribute('aria-busy', 'true');
-    button.textContent = app.t('creatingPdf');
-    try {
-      app.lastPdf = await app.createPdf();
-      document.getElementById('pdfActions').hidden = false;
-      const canShare = navigator.share && navigator.canShare && navigator.canShare({ files: [app.lastPdf.file] });
-      document.getElementById('sharePdfButton').hidden = !canShare;
-      document.getElementById('shareFallback').hidden = Boolean(canShare);
-      const subject = encodeURIComponent(`${CAMI.name} – ${app.t('pdfDocumentTitle')}`);
-      const body = encodeURIComponent(`${app.t('emailAttachNote')}\n\n${CAMI.name}\n${CAMI.address}`);
-      document.getElementById('emailPdfLink').href = `mailto:${CAMI.email}?subject=${subject}&body=${body}`;
-      const gonderimVar = Boolean(window.GONDERIM && window.GONDERIM.ucNokta);
-      if (app.state.submittedRef) {
-        const refAlan = document.getElementById('updateRef');
-        if (refAlan && !refAlan.value) refAlan.value = app.state.submittedRef;
-        const kutu = document.getElementById('updateRefBox');
-        if (kutu) kutu.open = true;
-      }
-      document.getElementById('submitBlock').hidden = !gonderimVar;
-      document.getElementById('pdfActions').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } catch (pdfError) {
-      console.error(pdfError);
-      error.textContent = app.t('pdfError');
-    } finally {
-      button.disabled = false;
-      button.removeAttribute('aria-busy');
-      button.textContent = app.t('createPdf');
     }
   }
 
   function bindActions() {
     document.querySelectorAll('[data-language]').forEach((button) => button.addEventListener('click', () => app.setLanguage(button.dataset.language)));
-    document.getElementById('startButton').addEventListener('click', () => app.goToStep(Math.max(1, Math.min(7, draft.restored ? app.state.currentStep : 1))));
+    /* Her giris temiz bir formla baslar; QR yeniden okutuldugunda onceki
+       cocugun bilgileri gelmez. */
+    document.getElementById('startButton').addEventListener('click', () => {
+      temizDurum(false);
+      app.goToStep(1);
+    });
+    document.getElementById('draftContinueButton').addEventListener('click', () => {
+      const taslak = readDraft();
+      const adim = Math.max(1, Math.min(7, Number(taslak.state.currentStep) || 1));
+      app.state = taslak.state;
+      app.state.sonAdim = adim;
+      restoreFields();
+      if (app.signature && typeof app.signature.yenidenYukle === 'function') app.signature.yenidenYukle();
+      updateImageUI();
+      updateDeclaration();
+      app.goToStep(adim);
+    });
+    document.getElementById('draftDeleteLink').addEventListener('click', () => {
+      if (!window.confirm(app.t('draftDeleteConfirm'))) return;
+      storageRemove(DRAFT_KEY);
+      temizDurum(false);
+      renderKarsilama();
+      app.showToast(app.t('draftDeleted'));
+    });
+    document.getElementById('siblingYesButton').addEventListener('click', () => {
+      temizDurum(true);
+      guncellemeNumarasiniTemizle();
+      app.goToStep(1);
+    });
+    document.getElementById('siblingNoLink').addEventListener('click', () => {
+      veliProfiliSil();
+      temizDurum(false);
+      renderKarsilama();
+    });
     document.getElementById('backButton').addEventListener('click', () => app.goToStep(app.state.currentStep - 1));
     document.getElementById('nextButton').addEventListener('click', () => {
       const step = app.state.currentStep;
@@ -1156,41 +1384,41 @@
     document.getElementById('homeLink').addEventListener('click', (event) => { event.preventDefault(); app.goToStep(0); });
     document.getElementById('contractReader').addEventListener('scroll', updateContractScroll, { passive: true });
     document.getElementById('toastClose').addEventListener('click', () => { document.getElementById('toast').hidden = true; });
-    document.getElementById('createPdfButton').addEventListener('click', generatePdf);
     document.getElementById('downloadPdfButton').addEventListener('click', downloadPdf);
+    document.getElementById('tesekkurKardes').addEventListener('click', () => {
+      temizDurum(true);
+      guncellemeNumarasiniTemizle();
+      document.getElementById('tesekkurEkrani').hidden = true;
+      app.goToStep(1);
+    });
     telefonlariBagla();
     const mrzDugme = document.getElementById('mrzOkuButonu');
     if (mrzDugme) mrzDugme.addEventListener('click', mrzDoldur);
     const tesekkurIndir = document.getElementById('tesekkurIndir');
     if (tesekkurIndir) tesekkurIndir.addEventListener('click', downloadPdf);
-    const tesekkurYeni = document.getElementById('tesekkurYeni');
-    if (tesekkurYeni) tesekkurYeni.addEventListener('click', () => {
-      if (!window.confirm(app.t('yeniKayitOnay'))) return;
-      try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* storage unavailable */ }
+    const tesekkurFarkli = document.getElementById('tesekkurFarkli');
+    if (tesekkurFarkli) tesekkurFarkli.addEventListener('click', () => {
+      if (!window.confirm(app.t('tesekkurFarkliConfirm'))) return;
+      storageRemove(DRAFT_KEY);
+      veliProfiliSil();
       window.location.reload();
     });
-    document.getElementById('submitButton').addEventListener('click', submitRegistration);
+    document.getElementById('submitButton').addEventListener('click', kaydiGonder);
     document.getElementById('sharePdfButton').addEventListener('click', sharePdf);
-    document.getElementById('deleteDraftButton').addEventListener('click', () => {
-      if (!window.confirm(app.t('deleteDraftConfirm'))) return;
-      try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* storage unavailable */ }
-      app.state = defaultState();
-      app.showToast(app.t('draftDeleted'));
-      setTimeout(() => window.location.reload(), 350);
-    });
   }
 
   function init() {
     bindActions();
     bindFormState();
     bindImages();
-    restoreFields();
+    /* restoreFields() BURADA CAGRILMAZ. Taslak yalnizca veli "Kaldigim yerden
+       devam et" derse forma yuklenir; QR her okutuldugunda form temizdir. */
     translatePage();
     app.signature.init();
     updateImageUI();
     updateDeclaration();
+    renderKarsilama();
     app.goToStep(0, { force: true, focus: false });
-    if (draft.restored) setTimeout(() => app.showToast(app.t('draftRestored')), 300);
     app.ready = true;
     document.dispatchEvent(new CustomEvent('kayit:ready'));
   }
