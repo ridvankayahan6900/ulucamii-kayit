@@ -1,9 +1,379 @@
-<!doctype html><html lang="tr"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ulu Camii Kur'an Kursu — Kayıt</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#faf8f5;color:#22201d;
-font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:24px}
-h1{color:#1f4e4e;font-size:1.4rem;margin:0 0 8px}p{color:#6b6560;max-width:32rem}</style>
-<div><h1>Kur'an Kursu Kayıt Formu</h1>
-<p>Kayıt sayfası hazırlanıyor. Lütfen kısa süre sonra tekrar deneyiniz.</p>
-<p>La page d'inscription est en préparation. Merci de réessayer bientôt.</p></div>
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1F4E4E">
+  <meta name="description" content="Marche-en-Famenne Ulu Camii 2026-2027 Kur’an kursu çevrimdışı kayıt uygulaması">
+  <title>Kur’an Kursu Online Kayıt</title>
+  <script>
+    const CAMI = Object.freeze({
+      name: 'Marche-en-Famenne Ulu Camii',
+      legalName: 'Association Diyanet Mosquée Ulu Camii de Marche en Famenne ASBL',
+      kbo: '0421.900.807',
+      address: 'Thier des Corbeaux 14, 6900 Marche-en-Famenne, Belçika',
+      phone: '+32 471 79 46 82',
+      phoneRaw: '32471794682',
+      email: 'ridvankayahan0032@gmail.com',
+      founded: 1986,
+      courseYear: '2026-2027'
+    });
+    window.CAMI = CAMI;
+    // Kayıt gönderimi: Google Apps Script Web App (Drive + Sheet + e-posta bildirimi)
+    window.GONDERIM = Object.freeze({
+      ucNokta: 'https://script.google.com/macros/s/AKfycbwcXfhbixInZr4uw_erxZFd1rXpmUV1G0zHI1RlWeWgDaUmF9xxmEK8KL2GtWDw6zOo-A/exec',
+      ortakSir: 'ULUCAMII-KAYIT-2026'
+    });
+  </script>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <!--
+  THESIS: Resmî kayıt dosyası telefonda tek uzun formu reddeder; her ekran velinin yalnızca bir görevi bitirdiği net bir sayfadır.
+  OWN-WORLD: Çam yeşili kurumsal çerçeve, mat kâğıt zemini, ince altın ayraçlar, düzenli belge satırları ve tek sistem yazı ailesi.
+  STORY: Veli kursu ve gizliliği anlar, kimlikten beyana ilerler, imzalar ve cihazında oluşan PDF'nin kontrolünü elinde tutar.
+  FIRST VIEWPORT: Logo ve dil üstte; kurs adı, takvim çizelgesi ve gizlilik güvencesi ortada; tek başlangıç eylemi doğal okuma sonunda.
+  FORM: Bölümlenmiş resmî kayıt dosyası; brief-pinned-ulucamii-2026.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+  -->
+
+  <a class="skip-link" href="#registrationForm" data-i18n="skipLink">Forma geç</a>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" id="homeLink" aria-label="Marche-en-Famenne Ulu Camii">
+        <img src="assets/logo.svg" alt="" width="48" height="48">
+        <span>
+          <strong data-i18n="institutionShort">Marche Ulu Camii</strong>
+          <small data-i18n="appTitle">Online kayıt</small>
+        </span>
+      </a>
+
+      <div class="language-switch" role="group" aria-label="Dil / Langue">
+        <button type="button" class="language-button is-active" data-language="tr" lang="tr" aria-pressed="true">TR</button>
+        <button type="button" class="language-button" data-language="fr" lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </header>
+
+    <div class="progress-panel" id="progressPanel" hidden>
+      <div class="progress-copy">
+        <span id="stepName">Kimlik</span>
+        <strong id="stepCount" aria-live="polite">1 / 7</strong>
+      </div>
+      <div class="progress-track" role="progressbar" aria-label="Kayıt ilerlemesi" data-i18n-aria="progressLabel" aria-valuemin="1" aria-valuemax="7" aria-valuenow="1">
+        <span id="progressFill"></span>
+      </div>
+    </div>
+
+    <main id="mainContent">
+      <form id="registrationForm" novalidate autocomplete="on">
+        <section class="step step-welcome is-active" data-step="0" aria-labelledby="welcomeTitle">
+          <div class="welcome-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="welcome-heading">
+            <img class="welcome-logo" src="assets/logo.svg" alt="Marche-en-Famenne Ulu Camii logosu" data-i18n-alt="logoAlt" width="112" height="112">
+            <h1 id="welcomeTitle" data-i18n="courseTitle">Kur’an-ı Kerim ve Temel Dinî Bilgiler Kursu</h1>
+            <p class="course-year" data-i18n="courseYear">2026–2027 eğitim yılı</p>
+            <p class="welcome-lead" data-i18n="welcomeIntro">Formu telefonunuzdan doldurun, sözleşmeyi okuyup imzalayın ve tamamlanan PDF’yi yalnızca siz istediğinizde paylaşın.</p>
+          </div>
+
+          <dl class="course-sheet">
+            <div><dt data-i18n="starts">Başlangıç</dt><dd data-i18n="startsValue">5 Eylül 2026 Cumartesi</dd></div>
+            <div><dt data-i18n="ends">Bitiş</dt><dd data-i18n="endsValue">6 Haziran 2027 Pazar</dd></div>
+            <div><dt data-i18n="courseDays">Ders günleri</dt><dd data-i18n="courseDaysValue">Cumartesi ve Pazar</dd></div>
+            <div><dt data-i18n="summerHours">Yaz saati</dt><dd data-i18n="summerHoursValue">11:00–13:40</dd></div>
+            <div><dt data-i18n="winterHours">Kış saati</dt><dd data-i18n="winterHoursValue">10:00–12:40</dd></div>
+            <div><dt data-i18n="lessonRhythm">Ders düzeni</dt><dd data-i18n="lessonRhythmValue">3 ders · 40 dk ders + 20 dk teneffüs</dd></div>
+            <div class="course-sheet-wide"><dt data-i18n="lessons">Dersler</dt><dd data-i18n="lessonsValue">Kur’an-ı Kerim · İtikat · İbadet · Siyer · Ahlak</dd></div>
+          </dl>
+
+          <aside class="privacy-note" aria-labelledby="privacyTitle">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24"><path d="M12 2.5 4.5 5.4v5.7c0 4.8 3 8.9 7.5 10.4 4.5-1.5 7.5-5.6 7.5-10.4V5.4L12 2.5Zm0 2.2 5.3 2v4.4c0 3.6-2.1 6.8-5.3 8.1-3.2-1.3-5.3-4.5-5.3-8.1V6.8l5.3-2.1Zm-1 4.1v2.1H9.7v4.8h4.6v-4.8H13V8.8h-2Zm.8 3.9h.4v1.2h-.4v-1.2Z"/></svg>
+            <div>
+              <h2 id="privacyTitle" data-i18n="privacyTitle">Bilgileriniz güvende</h2>
+              <p data-i18n="privacyText">Bilgileriniz ve kimlik fotoğrafları telefonunuzdan çıkmaz. Siz göndermedikçe hiçbir yere iletilmez.</p>
+              <small data-i18n="noServer">Sunucu yok · İzleme yok · Çerez yok</small>
+            </div>
+          </aside>
+
+          <button class="button button-primary button-wide" type="button" id="startButton" data-i18n="startRegistration">Kayda başla</button>
+        </section>
+
+        <section class="step" data-step="1" aria-labelledby="identityTitle" hidden>
+          <header class="step-heading">
+            <h1 id="identityTitle" data-i18n="identityTitle">Kimlik belgesini ekleyin</h1>
+            <p data-i18n="identityIntro">Ön ve arka yüzü kamerayla çekebilir veya galeriden seçebilirsiniz. Görseller yalnızca bu cihazda sıkıştırılır.</p>
+          </header>
+
+          <div class="identity-grid">
+            <article class="upload-panel" data-upload="identityFront">
+              <div class="upload-panel-heading">
+                <h2 data-i18n="identityFront">Kimlik ön yüz</h2>
+                <span class="status-chip" data-upload-status data-i18n="notAdded">Henüz görüntü eklenmedi</span>
+              </div>
+              <div class="image-preview" data-preview-container hidden>
+                <img data-preview src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Kimlik ön yüz önizlemesi" data-i18n-alt="identityFrontPreview">
+              </div>
+              <div class="upload-actions">
+                <label class="button button-secondary file-button">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8.5 5 10 3h4l1.5 2H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3.5ZM12 8a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>
+                  <span data-i18n="camera" data-camera-label>Kamera ile çek</span>
+                  <input type="file" accept="image/*" capture="environment" data-image-input="identityFront" tabindex="-1">
+                </label>
+                <label class="button button-secondary file-button">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v10.6l3.6-3.6 2.8 2.8 2.2-2.2L19 18V5H5Zm10 2.5A1.5 1.5 0 1 0 15 10a1.5 1.5 0 0 0 0-3Z"/></svg>
+                  <span data-i18n="gallery" data-gallery-label>Galeriden yükle</span>
+                  <input type="file" accept="image/*" data-image-input="identityFront" tabindex="-1">
+                </label>
+                <button class="button button-quiet" type="button" data-remove-image="identityFront" hidden data-i18n="removeImage">Kaldır</button>
+              </div>
+            </article>
+
+            <article class="upload-panel" data-upload="identityBack">
+              <div class="upload-panel-heading">
+                <h2 data-i18n="identityBack">Kimlik arka yüz</h2>
+                <span class="status-chip" data-upload-status data-i18n="notAdded">Henüz görüntü eklenmedi</span>
+              </div>
+              <div class="image-preview" data-preview-container hidden>
+                <img data-preview src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Kimlik arka yüz önizlemesi" data-i18n-alt="identityBackPreview">
+              </div>
+              <div class="upload-actions">
+                <label class="button button-secondary file-button">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8.5 5 10 3h4l1.5 2H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3.5ZM12 8a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>
+                  <span data-i18n="camera" data-camera-label>Kamera ile çek</span>
+                  <input type="file" accept="image/*" capture="environment" data-image-input="identityBack" tabindex="-1">
+                </label>
+                <label class="button button-secondary file-button">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v10.6l3.6-3.6 2.8 2.8 2.2-2.2L19 18V5H5Zm10 2.5A1.5 1.5 0 1 0 15 10a1.5 1.5 0 0 0 0-3Z"/></svg>
+                  <span data-i18n="gallery" data-gallery-label>Galeriden yükle</span>
+                  <input type="file" accept="image/*" data-image-input="identityBack" tabindex="-1">
+                </label>
+                <button class="button button-quiet" type="button" data-remove-image="identityBack" hidden data-i18n="removeImage">Kaldır</button>
+              </div>
+            </article>
+          </div>
+
+          <label class="check-row manual-check">
+            <input type="checkbox" name="manualIdentity" value="yes">
+            <span><strong data-i18n="manualIdentity">Kimliğim yanımda değil, bilgileri elle gireceğim</strong><small data-i18n="identitySkipNote">Bu adım zorunlu değildir. Kimlik eklenmezse özette hatırlatma gösterilir.</small></span>
+          </label>
+          <p class="field-error section-error" id="identityError" aria-live="polite"></p>
+        </section>
+
+        <section class="step" data-step="2" aria-labelledby="studentTitle" hidden>
+          <header class="step-heading">
+            <h1 id="studentTitle" data-i18n="studentTitle">Öğrenci bilgileri</h1>
+            <p data-i18n="studentIntro">Bilgileri kimlik belgesindeki yazılışa uygun girin.</p>
+          </header>
+
+          <article class="student-photo-row" data-upload="studentPhoto">
+            <div class="student-photo-preview" data-preview-container>
+              <img data-preview src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Öğrenci fotoğrafı önizlemesi" data-i18n-alt="studentPhotoPreview" hidden>
+              <svg data-empty-photo aria-hidden="true" viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5 0-9 2.5-9 5.5V21h18v-1.5C21 16.5 17 14 12 14Z"/></svg>
+            </div>
+            <div>
+              <h2 data-i18n="studentPhoto">Öğrenci fotoğrafı</h2>
+              <p data-i18n="studentPhotoHelp">Resmî formun fotoğraf alanı için ayrı bir portre ekleyebilirsiniz.</p>
+              <div class="inline-actions">
+                <label class="button button-secondary file-button"><span data-i18n="addPhoto" data-photo-label>Fotoğraf ekle</span><input type="file" accept="image/*" data-image-input="studentPhoto" tabindex="-1"></label>
+                <button class="button button-quiet" type="button" data-remove-image="studentPhoto" hidden data-i18n="removeImage">Kaldır</button>
+              </div>
+            </div>
+          </article>
+
+          <div class="form-grid">
+            <div class="field"><label for="studentSurname"><span data-i18n="surname">Soyadı</span> <span aria-hidden="true">*</span></label><input id="studentSurname" name="studentSurname" autocomplete="family-name" required aria-describedby="studentSurnameError"><p class="field-error" id="studentSurnameError"></p></div>
+            <div class="field"><label for="studentName"><span data-i18n="givenName">Adı</span> <span aria-hidden="true">*</span></label><input id="studentName" name="studentName" autocomplete="given-name" required aria-describedby="studentNameError"><p class="field-error" id="studentNameError"></p></div>
+            <div class="field"><label for="birthPlace"><span data-i18n="birthPlace">Doğum yeri</span> <span aria-hidden="true">*</span></label><input id="birthPlace" name="birthPlace" autocomplete="off" required aria-describedby="birthPlaceError"><p class="field-error" id="birthPlaceError"></p></div>
+            <div class="field"><label for="birthDate"><span data-i18n="birthDate">Doğum tarihi</span> <span aria-hidden="true">*</span></label><input id="birthDate" name="birthDate" type="date" autocomplete="bday" required aria-describedby="birthDateError"><p class="field-error" id="birthDateError"></p></div>
+            <div class="field"><label for="gender"><span data-i18n="gender">Cinsiyeti</span> <span aria-hidden="true">*</span></label><select id="gender" name="gender" required aria-describedby="genderError"><option value="" data-i18n="selectOne">Seçiniz</option><option value="female" data-i18n="female">Kız</option><option value="male" data-i18n="male">Erkek</option><option value="other" data-i18n="otherGender">Diğer / belirtmek istemiyor</option></select><p class="field-error" id="genderError"></p></div>
+            <div class="field"><label for="identityNumber"><span data-i18n="identityNumber">Kimlik no</span> <span aria-hidden="true">*</span></label><input id="identityNumber" name="identityNumber" inputmode="numeric" autocomplete="off" minlength="6" maxlength="20" required aria-describedby="identityNumberHelp identityNumberError"><small class="field-help" id="identityNumberHelp" data-i18n="identityNumberHelp">Belçika veya T.C. kimlik numarası</small><p class="field-error" id="identityNumberError"></p></div>
+            <div class="field"><label for="studentPhone"><span data-i18n="studentPhone">Öğrencinin cep telefonu</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="studentPhone" name="studentPhone" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="studentPhoneError"><p class="field-error" id="studentPhoneError"></p></div>
+            <div class="field"><label for="studentEmail"><span data-i18n="studentEmail">Öğrencinin e-postası</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="studentEmail" name="studentEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="studentEmailError"><p class="field-error" id="studentEmailError"></p></div>
+          </div>
+        </section>
+
+        <section class="step" data-step="3" aria-labelledby="schoolHealthTitle" hidden>
+          <header class="step-heading"><h1 id="schoolHealthTitle" data-i18n="schoolHealthTitle">Okul ve sağlık bilgileri</h1><p data-i18n="schoolHealthIntro">Kurs ekibinin öğrenciyi doğru destekleyebilmesi için gerekli bilgileri ekleyin.</p></header>
+
+          <div class="form-grid">
+            <div class="field field-full"><label for="school"><span data-i18n="school">Okuduğu okul</span> <span aria-hidden="true">*</span></label><select id="school" name="school" required aria-describedby="schoolError"><option value="" data-i18n="selectOne">Seçiniz</option></select><p class="field-error" id="schoolError"></p></div>
+            <div class="field field-full conditional-field" id="otherSchoolField" hidden><label for="otherSchoolName"><span data-i18n="otherSchoolName">Okulun adı</span> <span aria-hidden="true">*</span></label><input id="otherSchoolName" name="otherSchoolName" autocomplete="organization" aria-describedby="otherSchoolNameError"><p class="field-error" id="otherSchoolNameError"></p></div>
+            <div class="field field-full"><label for="classLevel"><span data-i18n="classLevel">Sınıfı</span> <span aria-hidden="true">*</span></label><input id="classLevel" name="classLevel" autocomplete="off" required data-i18n-placeholder="classPlaceholder" placeholder="Örn. 4. primaire / 1. secondaire" aria-describedby="classLevelError"><p class="field-error" id="classLevelError"></p></div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <fieldset class="choice-group" data-conditional-group="disability">
+            <legend><span data-i18n="disability">Engel (özür) durumu var mı?</span> <span aria-hidden="true">*</span></legend>
+            <div class="segmented-options"><label><input type="radio" name="disability" value="none" required><span data-i18n="none">Yok</span></label><label><input type="radio" name="disability" value="exists"><span data-i18n="exists">Var</span></label></div>
+            <p class="field-error" id="disabilityError"></p>
+            <div class="field conditional-field" id="disabilityDetailField" hidden><label for="disabilityDetail"><span data-i18n="disabilityDetail">Engel durumunu açıklayın</span> <span aria-hidden="true">*</span></label><textarea id="disabilityDetail" name="disabilityDetail" rows="3" aria-describedby="disabilityDetailError"></textarea><p class="field-error" id="disabilityDetailError"></p></div>
+          </fieldset>
+
+          <fieldset class="choice-group" data-conditional-group="illness">
+            <legend><span data-i18n="illness">Herhangi bir hastalığı var mı?</span> <span aria-hidden="true">*</span></legend>
+            <div class="segmented-options"><label><input type="radio" name="illness" value="none" required><span data-i18n="none">Yok</span></label><label><input type="radio" name="illness" value="exists"><span data-i18n="exists">Var</span></label></div>
+            <p class="field-error" id="illnessError"></p>
+            <div class="conditional-grid" id="illnessDetailFields" hidden>
+              <div class="field"><label for="illnessDetail"><span data-i18n="illnessDetail">Hastalığı açıklayın</span> <span aria-hidden="true">*</span></label><textarea id="illnessDetail" name="illnessDetail" rows="3" aria-describedby="illnessDetailError"></textarea><p class="field-error" id="illnessDetailError"></p></div>
+              <div class="field"><label for="medicine"><span data-i18n="medicine">Kullandığı ilaç</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="medicine" name="medicine" data-i18n-placeholder="medicineOptional" placeholder="İlaç kullanmıyorsa boş bırakın"></div>
+            </div>
+          </fieldset>
+
+          <div class="form-grid">
+            <div class="field"><label for="emergencyName"><span data-i18n="emergencyName">Acil durumda aranacak kişi</span> <span aria-hidden="true">*</span></label><input id="emergencyName" name="emergencyName" autocomplete="name" required aria-describedby="emergencyNameError"><p class="field-error" id="emergencyNameError"></p></div>
+            <div class="field"><label for="emergencyPhone"><span data-i18n="emergencyPhone">Acil durum telefonu</span> <span aria-hidden="true">*</span></label><input id="emergencyPhone" name="emergencyPhone" type="tel" inputmode="tel" autocomplete="tel" required aria-describedby="emergencyPhoneError"><p class="field-error" id="emergencyPhoneError"></p></div>
+          </div>
+
+          <fieldset class="choice-group" data-conditional-group="previousCourse">
+            <legend><span data-i18n="previousCourse">Daha önce Kur’an kursuna gitti mi?</span> <span aria-hidden="true">*</span></legend>
+            <div class="segmented-options"><label><input type="radio" name="previousCourse" value="yes" required><span data-i18n="yes">Evet</span></label><label><input type="radio" name="previousCourse" value="no"><span data-i18n="no">Hayır</span></label></div>
+            <p class="field-error" id="previousCourseError"></p>
+            <div class="field conditional-field" id="previousLevelField" hidden><label for="previousLevel"><span data-i18n="previousLevel">Önceki kurs seviyesi</span> <span aria-hidden="true">*</span></label><input id="previousLevel" name="previousLevel" data-i18n-placeholder="previousLevelPlaceholder" placeholder="Örn. Elif-Bâ, yüzüne okuma, ezber" aria-describedby="previousLevelError"><p class="field-error" id="previousLevelError"></p></div>
+          </fieldset>
+
+          <fieldset class="choice-group consent-group">
+            <legend><span data-i18n="mediaConsent">Fotoğraf ve video izni</span> <span aria-hidden="true">*</span></legend>
+            <p data-i18n="mediaConsentQuestion">Kurs etkinliklerinde çocuğunuzun fotoğraf veya videosunun kurumun tanıtım ve bilgilendirme çalışmalarında kullanılmasına izin veriyor musunuz?</p>
+            <div class="stacked-options"><label><input type="radio" name="mediaConsent" value="yes" required><span data-i18n="mediaYes">Evet, açıkça izin veriyorum</span></label><label><input type="radio" name="mediaConsent" value="no"><span data-i18n="mediaNo">Hayır, izin vermiyorum</span></label></div>
+            <small class="field-help" data-i18n="mediaConsentHelp">Bu seçim kaydı etkilemez ve ayrı bir açık rızadır.</small><p class="field-error" id="mediaConsentError"></p>
+          </fieldset>
+        </section>
+
+        <section class="step" data-step="4" aria-labelledby="guardianTitle" hidden>
+          <header class="step-heading"><h1 id="guardianTitle" data-i18n="guardianTitle">Veli bilgileri</h1><p data-i18n="guardianIntro">Kaydı yapan ve beyanı imzalayacak velinin bilgilerini girin.</p></header>
+          <div class="form-grid">
+            <div class="field"><label for="relationship"><span data-i18n="relationship">Veli yakınlığı</span> <span aria-hidden="true">*</span></label><select id="relationship" name="relationship" required aria-describedby="relationshipError"><option value="" data-i18n="selectOne">Seçiniz</option><option value="father" data-i18n="father">Baba</option><option value="mother" data-i18n="mother">Anne</option><option value="guardian" data-i18n="legalGuardian">Vasi</option></select><p class="field-error" id="relationshipError"></p></div>
+            <div class="field"><label for="guardianName"><span data-i18n="guardianName">Velinin adı ve soyadı</span> <span aria-hidden="true">*</span></label><input id="guardianName" name="guardianName" autocomplete="name" required aria-describedby="guardianNameError"><p class="field-error" id="guardianNameError"></p></div>
+            <div class="field"><label for="occupation"><span data-i18n="occupation">Mesleği</span> <span aria-hidden="true">*</span></label><input id="occupation" name="occupation" autocomplete="organization-title" required aria-describedby="occupationError"><p class="field-error" id="occupationError"></p></div>
+            <div class="field"><label for="homePhone"><span data-i18n="homePhone">Ev telefonu</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="homePhone" name="homePhone" type="tel" inputmode="tel" autocomplete="tel-national" aria-describedby="homePhoneError"><p class="field-error" id="homePhoneError"></p></div>
+            <div class="field"><label for="guardianPhone"><span data-i18n="mobilePhone">Cep telefonu</span> <span aria-hidden="true">*</span></label><input id="guardianPhone" name="guardianPhone" type="tel" inputmode="tel" autocomplete="tel" required aria-describedby="guardianPhoneError"><p class="field-error" id="guardianPhoneError"></p></div>
+            <div class="field"><label for="guardianEmail"><span data-i18n="email">E-posta</span> <span aria-hidden="true">*</span></label><input id="guardianEmail" name="guardianEmail" type="email" inputmode="email" autocomplete="email" required aria-describedby="guardianEmailError"><p class="field-error" id="guardianEmailError"></p></div>
+            <div class="field field-full"><label for="street"><span data-i18n="street">Sokak ve kapı no</span> <span aria-hidden="true">*</span></label><input id="street" name="street" autocomplete="street-address" required aria-describedby="streetError"><p class="field-error" id="streetError"></p></div>
+            <div class="field"><label for="postalCode"><span data-i18n="postalCode">Posta kodu</span> <span aria-hidden="true">*</span></label><input id="postalCode" name="postalCode" inputmode="numeric" autocomplete="postal-code" required aria-describedby="postalCodeError"><p class="field-error" id="postalCodeError"></p></div>
+            <div class="field"><label for="city"><span data-i18n="city">Şehir</span> <span aria-hidden="true">*</span></label><input id="city" name="city" autocomplete="address-level2" required aria-describedby="cityError"><p class="field-error" id="cityError"></p></div>
+          </div>
+        </section>
+
+        <section class="step" data-step="5" aria-labelledby="contractTitle" hidden>
+          <header class="step-heading"><h1 id="contractTitle" data-i18n="contractTitle">Kurs–Veli Sözleşmesi</h1><p data-i18n="contractIntro">Lütfen sözleşmenin tamamını okuyun. Onay kutusu metnin sonuna ulaştığınızda açılır.</p></header>
+          <div class="contract-reader" id="contractReader" tabindex="0" aria-label="Kurs–Veli Sözleşmesi" data-i18n-aria="contractReaderLabel">
+            <article id="contractContent" class="contract-content"></article>
+            <div id="contractEnd" class="contract-end" aria-hidden="true"></div>
+          </div>
+          <div class="scroll-status" id="contractScrollStatus"><span aria-hidden="true">↓</span><span data-i18n="contractScrollHint">Onaylamak için sözleşmenin sonuna kadar kaydırın</span></div>
+          <label class="check-row contract-check is-disabled" id="contractCheckLabel">
+            <input type="checkbox" name="contractAccepted" id="contractAccepted" disabled required>
+            <span><strong data-i18n="contractAccept">Okudum, anladım ve kabul ediyorum</strong></span>
+          </label>
+          <p class="field-error section-error" id="contractAcceptedError"></p>
+        </section>
+
+        <section class="step" data-step="6" aria-labelledby="declarationTitle" hidden>
+          <header class="step-heading"><h1 id="declarationTitle" data-i18n="declarationTitle">Beyan ve imza</h1><p data-i18n="declarationIntro">Beyanı kontrol edin ve veli olarak imzanızı ekleyin.</p></header>
+          <article class="declaration-paper">
+            <h2 data-i18n="declarationLabel">Veli beyanı</h2>
+            <p id="declarationText"></p>
+            <dl class="declaration-meta">
+              <div><dt data-i18n="date">Tarih</dt><dd><input id="declarationDate" name="declarationDate" type="date" required aria-describedby="declarationDateError"><span class="field-error" id="declarationDateError"></span></dd></div>
+              <div><dt data-i18n="signer">Velinin adı ve soyadı</dt><dd id="declarationSigner">—</dd></div>
+            </dl>
+          </article>
+          <div class="signature-block">
+            <div class="signature-block-heading"><h2 data-i18n="signature">İmza</h2><button class="button button-quiet" id="clearSignatureInline" type="button" hidden data-i18n="clear">Temizle</button></div>
+            <button type="button" class="signature-trigger" id="signatureTrigger" aria-describedby="signatureError">
+              <img id="signaturePreview" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="İmza önizlemesi" data-i18n-alt="signaturePreview" hidden>
+              <span id="signaturePlaceholder" data-i18n="signatureTapBilingual">İmza atmak için dokunun / Touchez pour signer</span>
+            </button>
+            <p class="field-error section-error" id="signatureError"></p>
+          </div>
+        </section>
+
+        <section class="step" data-step="7" aria-labelledby="summaryTitle" hidden>
+          <header class="step-heading"><h1 id="summaryTitle" data-i18n="summaryTitle">Bilgileri kontrol edin</h1><p data-i18n="summaryIntro">PDF oluşturmadan önce bütün bölümleri gözden geçirebilirsiniz.</p></header>
+          <div class="summary-list" id="summaryList"></div>
+          <section class="pdf-panel" aria-labelledby="pdfSectionTitle">
+            <h2 id="pdfSectionTitle" data-i18n="pdfSectionTitle">Belgenizi hazırlayın</h2>
+            <p data-i18n="pdfSectionIntro">PDF tamamen bu cihazda oluşturulur. Aşağıdaki düğmelerden birine siz basmadıkça hiçbir yere gönderilmez.</p>
+            <button class="button button-primary button-wide" type="button" id="createPdfButton" data-i18n="createPdf">PDF oluştur</button>
+            <div id="pdfActions" class="pdf-actions" hidden>
+              <p class="success-message" data-i18n="pdfReady">PDF hazır. Nasıl devam etmek istersiniz?</p>
+              <div id="submitBlock" class="submit-block" hidden>
+                <details class="update-ref" id="updateRefBox">
+                  <summary data-i18n="updateExisting">Daha önce kayıt yaptınız mı?</summary>
+                  <div class="field">
+                    <label for="updateRef" data-i18n="updateRefLabel">Güncellenecek kayıt numarası</label>
+                    <input id="updateRef" name="updateRef" type="text" autocapitalize="characters" spellcheck="false" placeholder="UC-2026-0001" aria-describedby="updateRefHelp">
+                    <small id="updateRefHelp" data-i18n="updateRefHelp">Bilgilerinizi güncelliyorsanız önceki kayıt numaranızı buraya yazın; yeni bir kayıt yapıyorsanız boş bırakın.</small>
+                  </div>
+                </details>
+                <button class="button button-primary button-wide" type="button" id="submitButton" data-i18n="submitRegistration">Kaydı gönder</button>
+                <small data-i18n="submitNote">Kaydınız kurs yönetimine iletilir ve size bir referans numarası verilir.</small>
+                <p class="field-error section-error" id="submitError" aria-live="assertive"></p>
+              </div>
+              <div id="submitSuccess" class="submit-success" hidden role="status">
+                <p class="success-message" data-i18n="submitDone">Kaydınız alındı.</p>
+                <p class="ref-number" id="refNumber"></p>
+                <small data-i18n="refNote">Bu numarayı saklayınız. Kendi kopyanız için aşağıdan PDF'i de indirebilirsiniz.</small>
+              </div>
+              <button class="button button-primary" type="button" id="sharePdfButton"><span data-i18n="shareWhatsApp">WhatsApp ile gönder</span></button>
+              <button class="button button-secondary" type="button" id="downloadPdfButton" data-i18n="downloadPdf">PDF’yi indir</button>
+              <a class="button button-secondary" id="emailPdfLink" href="#" data-i18n="emailPdf">E-posta ile gönder</a>
+              <small data-i18n="emailAttachNote">E-posta uygulaması açıldığında, indirdiğiniz PDF dosyasını iletiye ekleyin.</small>
+              <p class="fallback-note" id="shareFallback" hidden data-i18n="shareUnsupported">Bu tarayıcı dosya paylaşımını desteklemiyor. PDF’yi indirip WhatsApp veya e-postaya ekleyebilir ya da çıktısını camiye getirebilirsiniz.</p>
+            </div>
+            <p class="field-error section-error" id="pdfError" aria-live="assertive"></p>
+          </section>
+          <section class="closing-panel">
+            <h2 data-i18n="thanksTitle">Teşekkür ederiz</h2>
+            <p data-i18n="thanksText">Kaydınızı camiye ulaştırdıktan sonra kurs ekibi sizinle iletişime geçecektir.</p>
+            <p><strong data-i18n="courseReminder">Dersler 5 Eylül 2026 Cumartesi günü başlıyor.</strong></p>
+            <address><span data-i18n="institutionShort">Marche Ulu Camii</span><br><span data-i18n="mosqueAddress">Thier des Corbeaux 14, 6900 Marche-en-Famenne</span></address>
+            <button class="button button-danger" type="button" id="deleteDraftButton" data-i18n="deleteDraft">Taslağı sil</button>
+          </section>
+        </section>
+
+        <nav class="form-navigation" id="formNavigation" aria-label="Form adımları" data-i18n-aria="formStepsLabel" hidden>
+          <button class="button button-secondary" type="button" id="backButton" data-i18n="back">Geri</button>
+          <button class="button button-primary" type="button" id="nextButton" data-i18n="continue">Devam</button>
+        </nav>
+      </form>
+    </main>
+
+    <footer class="site-footer"><span>© 2026</span><span>Association Diyanet Mosquée Ulu Camii de Marche en Famenne ASBL</span><span>KBO 0421.900.807</span></footer>
+  </div>
+
+  <dialog id="signatureDialog" class="signature-dialog" aria-labelledby="signatureDialogTitle">
+    <div class="signature-dialog-shell">
+      <header class="signature-dialog-header">
+        <h1 id="signatureDialogTitle" data-i18n="signature">İmza</h1>
+        <button class="button button-primary" type="button" id="finishSignatureButton" data-i18n="done">Tamam</button>
+      </header>
+      <div class="signature-canvas-wrap" id="signatureCanvasWrap">
+        <canvas id="signatureCanvas"></canvas>
+        <p aria-hidden="true" data-i18n="signatureHintBilingual">İmzanızı bu alana atabilirsiniz / Vous pouvez signer dans cette zone</p>
+      </div>
+      <footer class="signature-toolbar">
+        <button class="button button-secondary" type="button" id="undoSignatureButton" data-i18n="undo">Geri al</button>
+        <button class="button button-secondary" type="button" id="clearSignatureButton" data-i18n="clear">Temizle</button>
+      </footer>
+      <p class="signature-dialog-error" id="signatureDialogError" role="alert"></p>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button type="button" id="toastClose" aria-label="Bildirimi kapat" data-i18n-aria="toastClose">×</button></div>
+
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="vendor/fontkit.umd.min.js"></script>
+  <script src="vendor/DejaVuSans.base64.js"></script>
+  <script src="assets/i18n.js"></script>
+  <script src="assets/data.js"></script>
+  <script src="assets/signature.js"></script>
+  <script src="assets/pdf.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

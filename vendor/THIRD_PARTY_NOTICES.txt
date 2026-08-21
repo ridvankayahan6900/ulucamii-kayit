@@ -1,0 +1,57 @@
+THIRD-PARTY NOTICES
+===================
+
+Bu klasördeki üçüncü taraf dosyaları yalnızca tarayıcıda yerel çalıştırma için
+uygulamayla birlikte dağıtılır. Uygulama çalışma zamanında CDN veya başka bir
+dış kaynaktan kod/font indirmez.
+
+1. pdf-lib 1.17.1
+------------------
+Dosya: pdf-lib.min.js
+Proje: https://github.com/Hopding/pdf-lib
+Lisans: MIT
+Copyright (c) 2019 Andrew Dillon
+
+MIT lisans metni:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+2. @pdf-lib/fontkit 1.1.1
+-------------------------
+Dosya: fontkit.umd.min.js
+Proje: https://github.com/Hopding/pdf-lib/tree/master/libs/fontkit
+Lisans: MIT
+
+Bu paket MIT lisansı altında yayımlanır. Yukarıdaki MIT lisans koşulları bu
+dosya için de geçerlidir.
+
+3. DejaVu Sans 2.37
+-------------------
+Dosyalar: DejaVuSans.ttf, DejaVuSans.base64.js
+Proje: https://dejavu-fonts.github.io/
+Lisans: Bitstream Vera Fonts Copyright ve DejaVu değişiklik hükümleri
+
+DejaVu yazı tipleri Bitstream Vera yazı tiplerinden türetilmiştir. Dağıtım,
+font dosyasındaki adların yazı tipinin değiştirilmiş sürümlerinde önceden yazılı
+izin olmadan kullanılmaması ve yazı tiplerinin tek başına satılmaması koşulları
+başta olmak üzere DejaVu lisansına tabidir. Tam lisans metni:
+https://dejavu-fonts.github.io/License.html
+
+Base64 betiği, aynı DejaVuSans.ttf dosyasının byte-for-byte Base64 temsilidir;
+ayrı bir eser veya farklı lisanslı font değildir.
