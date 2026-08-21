@@ -451,10 +451,14 @@
       const girdi = document.getElementById(id);
       const kod = document.getElementById(`${id}CC`);
       if (!girdi || !kod) return;
-      const uygula = () => {
+      const uygula = (kullaniciEylemi) => {
         const ham = String(girdi.value || '');
         const imlec = girdi.selectionStart === null ? ham.length : girdi.selectionStart;
         const oncekiRakam = (ham.slice(0, imlec).match(/\d/g) || []).length;
+        // Ulke kodu duruma YALNIZCA kullanici eylemiyle yazilir. Baglama aninda
+        // yazilsaydi, hemen ardindan calisan taslak geri yukleme kayitli kodu
+        // DOM varsayilaniyla ezilmis bulurdu.
+        if (kullaniciEylemi) app.state.fields[`${id}CC`] = kod.value;
         const bicimli = telBicimle(ham, kod.value);
         if (bicimli === ham) return;
         girdi.value = bicimli;
@@ -469,24 +473,32 @@
         }
         try { girdi.setSelectionRange(poz, poz); } catch (_) { /* desteklenmiyor */ }
       };
-      girdi.addEventListener('input', uygula);
-      kod.addEventListener('change', uygula);
-      uygula();
+      girdi.addEventListener('input', () => uygula(true));
+      kod.addEventListener('change', () => uygula(true));
+      uygula(false);
     });
+  }
+
+  /* Ulke kodunun tek dogru kaynagi ekrandaki acilir listedir; durum yalnizca
+     yedektir. Boylece veli ne goruyorsa belgeye de o gider. */
+  function telUlkeKodu(id) {
+    const kod = document.getElementById(`${id}CC`);
+    if (kod && kod.value) return kod.value;
+    return String(app.state.fields[`${id}CC`] || '32');
   }
 
   /* Belgede/ozette gosterim: +32 471 79 46 82 */
   app.telGosterim = function (id) {
     const ulusal = String(app.state.fields[id] || '').trim();
     if (!ulusal) return '';
-    return `+${String(app.state.fields[`${id}CC`] || '32')} ${ulusal}`;
+    return `+${telUlkeKodu(id)} ${ulusal}`;
   };
 
   /* Gonderimde: +32471794682 */
   app.telE164 = function (id) {
     const rakam = String(app.state.fields[id] || '').replace(/\D/g, '');
     if (!rakam) return '';
-    return `+${String(app.state.fields[`${id}CC`] || '32')}${rakam}`;
+    return `+${telUlkeKodu(id)}${rakam}`;
   };
 
   /* Adres: Rue Example 14 bte 3, 6900 Marche-en-Famenne */
