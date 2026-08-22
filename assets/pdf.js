@@ -115,6 +115,24 @@
     page.drawText(fitText(value, font, 8.1, width - 10), { x: x + 5, y: top - 19, size: 8.1, font, color: COLORS.ink });
   }
 
+  /* Tam genişlikli, satır kaydırmalı hücre. Uzun içerik kesilmez; hücre
+     yüksekliği satır sayısına göre büyür. En fazla `azamiSatir` satır. */
+  function drawWideCell(page, font, y, label, value, azamiSatir) {
+    const width = PAGE_WIDTH - MARGIN * 2;
+    const metin = normalize(value);
+    const satirlar = metin ? wrapText(metin, font, 8.1, width - 10) : [''];
+    const sinir = azamiSatir || 6;
+    const gosterilen = satirlar.slice(0, sinir);
+    if (satirlar.length > sinir) gosterilen[sinir - 1] = fitText(gosterilen[sinir - 1] + ' …', font, 8.1, width - 10);
+    const height = 14 + gosterilen.length * 9.6 + 2;
+    page.drawRectangle({ x: MARGIN, y: y - height, width, height, color: COLORS.white, borderColor: COLORS.line, borderWidth: .55 });
+    page.drawText(fitText(label, font, 6.2, width - 10), { x: MARGIN + 5, y: y - 8, size: 6.2, font, color: COLORS.muted });
+    gosterilen.forEach((satir, i) => {
+      page.drawText(satir, { x: MARGIN + 5, y: y - 19 - i * 9.6, size: 8.1, font, color: COLORS.ink });
+    });
+    return y - height;
+  }
+
   function drawPair(page, font, y, left, right, height) {
     const gap = 5;
     const width = (PAGE_WIDTH - MARGIN * 2 - gap) / 2;
@@ -154,7 +172,7 @@
   }
 
   async function drawRegistrationForm(document, font) {
-    const page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    let page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     const fields = app.state.fields;
     page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: COLORS.paper });
     page.drawRectangle({ x: 0, y: PAGE_HEIGHT - 12, width: PAGE_WIDTH, height: 12, color: COLORS.pine });
@@ -190,22 +208,44 @@
     y = drawPair(page, font, y, [app.t('birthPlace'), fields.birthPlace], [app.t('birthDate'), formatDate(fields.birthDate)]);
     y = drawPair(page, font, y, [app.t('gender'), labelChoice('gender', fields.gender)], [app.t('identityNumber'), fields.identityNumber]);
     y = drawPair(page, font, y, [app.t('studentPhone'), app.telGosterim('studentPhone')], [app.t('studentEmail'), fields.studentEmail]);
-    y = drawPair(page, font, y, [app.t('school'), school], [app.t('classLevel'), fields.classLevel]);
-    y = drawPair(page, font, y, [app.t('disability'), fields.disability === 'exists' ? fields.disabilityDetail : app.t('none')], [app.t('illness'), fields.illness === 'exists' ? fields.illnessDetail : app.t('none')]);
-    y = drawPair(page, font, y, [app.t('medicine'), fields.medicine], [app.t('emergencyName'), fields.emergencyName]);
-    y = drawPair(page, font, y, [app.t('emergencyPhone'), app.telGosterim('emergencyPhone')], [app.t('previousCourse'), labelChoice('yesNo', fields.previousCourse)]);
-    y = drawPair(page, font, y, [app.t('previousLevel'), fields.previousLevel], [app.t('mediaConsent'), fields.mediaConsent === 'yes' ? app.t('mediaYes') : app.t('mediaNo')]);
+    // Uzun okul adları ("… – Implantation de …") yarım hücreye sığmaz.
+    const okulGenis = font.widthOfTextAtSize(normalize(school), 8.1) > (PAGE_WIDTH - MARGIN * 2 - 5) / 2 - 10;
+    if (okulGenis) {
+      y = drawWideCell(page, font, y, app.t('school'), school, 2);
+      y = drawPair(page, font, y, [app.t('classLevel'), fields.classLevel], [app.t('courseYear'), CAMI.courseYear]);
+    } else {
+      y = drawPair(page, font, y, [app.t('school'), school], [app.t('classLevel'), fields.classLevel]);
+    }
+    /* Sağlık bilgisi kesilemez: dolu olanlar tam genişlikte, kaydırmalı. */
+    const engel = fields.disability === 'exists' ? fields.disabilityDetail : '';
+    const hastalik = fields.illness === 'exists' ? fields.illnessDetail : '';
+    if (engel) y = drawWideCell(page, font, y, app.t('disability'), engel, 4);
+    if (hastalik) y = drawWideCell(page, font, y, app.t('illness'), hastalik, 4);
+    if (fields.medicine) y = drawWideCell(page, font, y, app.t('medicine'), fields.medicine, 3);
+    if (!engel && !hastalik) y = drawPair(page, font, y, [app.t('disability'), app.t('none')], [app.t('illness'), app.t('none')]);
+    y = drawPair(page, font, y, [app.t('emergencyName'), fields.emergencyName], [app.t('emergencyPhone'), app.telGosterim('emergencyPhone')]);
+    y = drawPair(page, font, y, [app.t('previousCourse'), labelChoice('yesNo', fields.previousCourse)], [app.t('mediaConsent'), fields.mediaConsent === 'yes' ? app.t('mediaYes') : app.t('mediaNo')]);
+    if (fields.previousCourse === 'yes' && fields.previousLevel) y = drawWideCell(page, font, y, app.t('previousLevel'), fields.previousLevel, 2);
 
     y -= 7;
     y = drawSectionHeader(page, app.lang === 'fr' ? 'INFORMATIONS SUR LE PARENT' : 'VELİ BİLGİLERİ', font, y);
     y = drawPair(page, font, y, [app.t('relationship'), labelChoice('relationship', fields.relationship)], [app.t('guardianName'), fields.guardianName]);
     y = drawPair(page, font, y, [app.t('occupation'), fields.occupation], [app.t('homePhone'), app.telGosterim('homePhone')]);
     y = drawPair(page, font, y, [app.t('mobilePhone'), app.telGosterim('guardianPhone')], [app.t('email'), fields.guardianEmail]);
-    y = drawPair(page, font, y, [app.t('address'), address], [app.t('courseYear'), CAMI.courseYear]);
+    y = drawWideCell(page, font, y, app.t('address'), address, 2);
 
     y -= 7;
-    y = drawSectionHeader(page, app.lang === 'fr' ? 'DÉCLARATION' : 'BEYAN', font, y);
+    /* Beyan + tarih + imza bloğu yaklaşık 150 pt ister. Uzun sağlık notları
+       sayfayı doldurduysa blok bölünmesin; yeni sayfada tamamı çizilsin. */
     const declarationLines = wrapText(app.declaration[app.lang], font, 7.25, PAGE_WIDTH - MARGIN * 2 - 12);
+    const beyanYuksekligi = 22 + declarationLines.length * 9.3 + 4 + 23 + 47 + 30;
+    if (y - beyanYuksekligi < 30) {
+      page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: COLORS.paper });
+      page.drawText(`${CAMI.name} · ${CAMI.kbo}`, { x: MARGIN, y: PAGE_HEIGHT - 30, size: 6.8, font, color: COLORS.muted });
+      y = PAGE_HEIGHT - 50;
+    }
+    y = drawSectionHeader(page, app.lang === 'fr' ? 'DÉCLARATION' : 'BEYAN', font, y);
     declarationLines.forEach((line) => {
       page.drawText(line, { x: MARGIN + 6, y: y - 10, size: 7.25, font, color: COLORS.ink });
       y -= 9.3;
@@ -290,7 +330,7 @@
     let y = writer.getY();
     page.drawRectangle({ x: MARGIN, y: y - 96, width: PAGE_WIDTH - MARGIN * 2, height: 96, color: COLORS.white, borderColor: COLORS.line, borderWidth: .7 });
     page.drawText(approval, { x: MARGIN + 12, y: y - 20, size: 8.2, font, color: COLORS.ink });
-    page.drawText(`${app.t('signer')}: ${normalize(app.state.fields.guardianName)}`, { x: MARGIN + 12, y: y - 39, size: 8.2, font, color: COLORS.ink });
+    page.drawText(fitText(`${app.t('signer')}: ${normalize(app.state.fields.guardianName)}`, font, 8.2, 225), { x: MARGIN + 12, y: y - 39, size: 8.2, font, color: COLORS.ink });
     const signature = await embedDataImage(document, app.state.signatureData);
     if (signature) drawImageContained(page, signature, MARGIN + 250, y - 86, 220, 62);
   }

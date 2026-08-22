@@ -218,9 +218,25 @@
     if (typeof app.saveDraft === 'function') app.saveDraft();
   };
 
+  /* Toplam çizgi uzunluğu, tuval genişliği birimiyle. */
+  function murekkepUzunlugu() {
+    let toplam = 0;
+    signature.strokes.forEach((stroke) => {
+      for (let i = 1; i < stroke.length; i += 1) {
+        toplam += Math.hypot(stroke[i].x - stroke[i - 1].x, (stroke[i].y - stroke[i - 1].y) * 0.4);
+      }
+    });
+    return toplam;
+  }
+
   signature.finish = function () {
     if (!signature.strokes.length) {
       document.getElementById('signatureDialogError').textContent = app.t('signatureEmpty');
+      return false;
+    }
+    // Tek dokunuş ya da minicik bir çizik imza sayılmaz.
+    if (murekkepUzunlugu() < 0.12) {
+      document.getElementById('signatureDialogError').textContent = app.t('signatureTooShort');
       return false;
     }
     const dataUrl = exportDataUrl();
@@ -235,12 +251,25 @@
     return true;
   };
 
+  signature.iptal = function () {
+    signature.strokes = Array.isArray(app.state.signatureStrokes)
+      ? app.state.signatureStrokes.map((stroke) => stroke.map((point) => ({ ...point })))
+      : [];
+    signature.activeStroke = null;
+    document.getElementById('signatureDialogError').textContent = '';
+    if (signature.dialog.open) signature.dialog.close();
+    document.body.style.overflow = '';
+    render();
+    document.getElementById('signatureTrigger').focus({ preventScroll: true });
+  };
+
   signature.dataUrl = function () {
     return app.state ? app.state.signatureData || '' : '';
   };
 
+  /* Yalnızca ONAYLANMIŞ imza sayılır; penceredeki taslak çizgiler değil. */
   signature.isEmpty = function () {
-    return !signature.strokes.length && !(app.state && app.state.signatureData);
+    return !(app.state && app.state.signatureData);
   };
 
   /* Taslaktan devam edilirken imzayi durumdan geri yukler. */
@@ -287,11 +316,12 @@
         signature.finish();
       }
     });
+    /* İptal (ESC / geri): onaylanmamış çizgiler ATILIR, en son "Tamam" denen
+       imzaya dönülür. Aksi halde isEmpty() "imza var" der ama belge imzasız
+       çıkardı. */
     signature.dialog.addEventListener('cancel', (event) => {
       event.preventDefault();
-      signature.dialog.close();
-      document.body.style.overflow = '';
-      document.getElementById('signatureTrigger').focus({ preventScroll: true });
+      signature.iptal();
     });
     window.addEventListener('resize', () => {
       if (signature.dialog.open) requestAnimationFrame(render);

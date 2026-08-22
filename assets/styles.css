@@ -1791,3 +1791,19 @@ input.oto-dolu,select.oto-dolu{background:rgba(176,141,87,.12);
 /* Bütün düğmeler için asgari dokunma hedefi (parmakla kullanılan form).
    Alt piksel yuvarlamasında 44'ün altına düşmesin diye 46 px. */
 .button{min-height:46px}
+
+/* uyarı: hata değil, dikkat çekme */
+.field-uyari{margin:.4rem 0 0;font-size:.86rem;line-height:1.5;color:#7A4E12;
+  background:rgba(176,141,87,.14);border-left:3px solid var(--accent-2,#B08D57);
+  border-radius:0 10px 10px 0;padding:.45rem .7rem}
+
+/* klavye odağı: dosya düğmeleri ve sessiz metin düğmeleri */
+label.file-button:focus-visible,
+.link-button:focus-visible{outline:3px solid var(--accent,#1F4E4E);outline-offset:3px}
+
+/* imza önizlemesi her temada açık zemin — koyu mürekkep koyu zeminde kaybolmasın */
+.signature-trigger{background:#fff}
+@media (prefers-color-scheme:dark){
+  .signature-trigger{background:#f4efe6}
+  .signature-trigger #signaturePlaceholder{color:#4a4740}
+}

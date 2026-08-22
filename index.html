@@ -124,6 +124,7 @@
               <label for="updateRef" data-i18n="updateRefLabel">Güncellenecek kayıt numarası</label>
               <input id="updateRef" name="updateRef" type="text" autocapitalize="characters" spellcheck="false" placeholder="UC-2026-0001" aria-describedby="updateRefHelp">
               <small id="updateRefHelp" data-i18n="updateRefHelp">Bilgilerinizi güncelliyorsanız önceki kayıt numaranızı buraya yazın; yeni bir kayıt yapıyorsanız boş bırakın.</small>
+              <p class="field-error" id="updateRefError" role="alert"></p>
             </div>
           </details>
         </section>
@@ -144,12 +145,12 @@
                 <img data-preview src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Kimlik ön yüz önizlemesi" data-i18n-alt="identityFrontPreview">
               </div>
               <div class="upload-actions">
-                <label class="button button-secondary file-button">
+                <label class="button button-secondary file-button" tabindex="0" role="button">
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8.5 5 10 3h4l1.5 2H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3.5ZM12 8a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>
                   <span data-i18n="camera" data-camera-label>Kamera ile çek</span>
                   <input type="file" accept="image/*" capture="environment" data-image-input="identityFront" tabindex="-1">
                 </label>
-                <label class="button button-secondary file-button">
+                <label class="button button-secondary file-button" tabindex="0" role="button">
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v10.6l3.6-3.6 2.8 2.8 2.2-2.2L19 18V5H5Zm10 2.5A1.5 1.5 0 1 0 15 10a1.5 1.5 0 0 0 0-3Z"/></svg>
                   <span data-i18n="gallery" data-gallery-label>Galeriden yükle</span>
                   <input type="file" accept="image/*" data-image-input="identityFront" tabindex="-1">
@@ -167,12 +168,12 @@
                 <img data-preview src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Kimlik arka yüz önizlemesi" data-i18n-alt="identityBackPreview">
               </div>
               <div class="upload-actions">
-                <label class="button button-secondary file-button">
+                <label class="button button-secondary file-button" tabindex="0" role="button">
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8.5 5 10 3h4l1.5 2H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3.5ZM12 8a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>
                   <span data-i18n="camera" data-camera-label>Kamera ile çek</span>
                   <input type="file" accept="image/*" capture="environment" data-image-input="identityBack" tabindex="-1">
                 </label>
-                <label class="button button-secondary file-button">
+                <label class="button button-secondary file-button" tabindex="0" role="button">
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v10.6l3.6-3.6 2.8 2.8 2.2-2.2L19 18V5H5Zm10 2.5A1.5 1.5 0 1 0 15 10a1.5 1.5 0 0 0 0-3Z"/></svg>
                   <span data-i18n="gallery" data-gallery-label>Galeriden yükle</span>
                   <input type="file" accept="image/*" data-image-input="identityBack" tabindex="-1">
@@ -211,7 +212,7 @@
               <h2 data-i18n="studentPhoto">Öğrenci fotoğrafı</h2>
               <p data-i18n="studentPhotoHelp">Resmî formun fotoğraf alanı için ayrı bir portre ekleyebilirsiniz.</p>
               <div class="inline-actions">
-                <label class="button button-secondary file-button"><span data-i18n="addPhoto" data-photo-label>Fotoğraf ekle</span><input type="file" accept="image/*" data-image-input="studentPhoto" tabindex="-1"></label>
+                <label class="button button-secondary file-button" tabindex="0" role="button"><span data-i18n="addPhoto" data-photo-label>Fotoğraf ekle</span><input type="file" accept="image/*" data-image-input="studentPhoto" tabindex="-1"></label>
                 <button class="button button-quiet" type="button" data-remove-image="studentPhoto" hidden data-i18n="removeImage">Kaldır</button>
               </div>
             </div>
@@ -221,9 +222,9 @@
             <div class="field"><label for="studentSurname"><span data-i18n="surname">Soyadı</span> <span aria-hidden="true">*</span></label><input id="studentSurname" name="studentSurname" autocomplete="family-name" required aria-describedby="studentSurnameError"><p class="field-error" id="studentSurnameError"></p></div>
             <div class="field"><label for="studentName"><span data-i18n="givenName">Adı</span> <span aria-hidden="true">*</span></label><input id="studentName" name="studentName" autocomplete="given-name" required aria-describedby="studentNameError"><p class="field-error" id="studentNameError"></p></div>
             <div class="field"><label for="birthPlace"><span data-i18n="birthPlace">Doğum yeri</span> <span aria-hidden="true">*</span></label><input id="birthPlace" name="birthPlace" autocomplete="off" required aria-describedby="birthPlaceError"><p class="field-error" id="birthPlaceError"></p></div>
-            <div class="field"><label for="birthDate"><span data-i18n="birthDate">Doğum tarihi</span> <span aria-hidden="true">*</span></label><input id="birthDate" name="birthDate" type="date" autocomplete="bday" required aria-describedby="birthDateError"><p class="field-error" id="birthDateError"></p></div>
+            <div class="field"><label for="birthDate"><span data-i18n="birthDate">Doğum tarihi</span> <span aria-hidden="true">*</span></label><input id="birthDate" name="birthDate" type="date" autocomplete="bday" required min="1990-01-01" aria-describedby="birthDateUyari birthDateError"><p class="field-uyari" id="birthDateUyari" role="status" hidden></p><p class="field-error" id="birthDateError"></p></div>
             <div class="field"><label for="gender"><span data-i18n="gender">Cinsiyeti</span> <span aria-hidden="true">*</span></label><select id="gender" name="gender" required aria-describedby="genderError"><option value="" data-i18n="selectOne">Seçiniz</option><option value="female" data-i18n="female">Kız</option><option value="male" data-i18n="male">Erkek</option></select><p class="field-error" id="genderError"></p></div>
-            <div class="field"><label for="identityNumber"><span data-i18n="identityNumber">Kimlik no</span> <span aria-hidden="true">*</span></label><input id="identityNumber" name="identityNumber" inputmode="numeric" autocomplete="off" minlength="6" maxlength="20" required aria-describedby="identityNumberHelp identityNumberError"><small class="field-help" id="identityNumberHelp" data-i18n="identityNumberHelp">Belçika veya T.C. kimlik numarası</small><p class="field-error" id="identityNumberError"></p></div>
+            <div class="field"><label for="identityNumber"><span data-i18n="identityNumber">Kimlik no</span> <span aria-hidden="true">*</span></label><input id="identityNumber" name="identityNumber" autocomplete="off" autocapitalize="characters" minlength="6" maxlength="20" required aria-describedby="identityNumberHelp identityNumberError"><small class="field-help" id="identityNumberHelp" data-i18n="identityNumberHelp">Belçika veya T.C. kimlik numarası</small><p class="field-uyari" id="identityNumberUyari" role="status" hidden></p><p class="field-error" id="identityNumberError"></p></div>
             <div class="field"><label for="studentPhone"><span data-i18n="studentPhone">Öğrencinin cep telefonu</span> <small data-i18n="optional">İsteğe bağlı</small></label><div class="tel-grup"><select class="tel-cc" id="studentPhoneCC" name="studentPhoneCC" aria-label="Ülke kodu / Indicatif"><option value="32" selected>BE +32</option><option value="90">TR +90</option><option value="33">FR +33</option><option value="31">NL +31</option><option value="49">DE +49</option><option value="352">LU +352</option><option value="44">UK +44</option><option value="39">IT +39</option><option value="34">ES +34</option><option value="212">MA +212</option></select><input id="studentPhone" name="studentPhone" type="tel" inputmode="numeric" autocomplete="tel-national" aria-describedby="studentPhoneError"></div><p class="field-error" id="studentPhoneError"></p></div>
             <div class="field"><label for="studentEmail"><span data-i18n="studentEmail">Öğrencinin e-postası</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="studentEmail" name="studentEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="studentEmailError"><p class="field-error" id="studentEmailError"></p></div>
           </div>
@@ -287,7 +288,7 @@
             <div class="field"><label for="guardianPhone"><span data-i18n="mobilePhone">Cep telefonu</span> <span aria-hidden="true">*</span></label><div class="tel-grup"><select class="tel-cc" id="guardianPhoneCC" name="guardianPhoneCC" aria-label="Ülke kodu / Indicatif"><option value="32" selected>BE +32</option><option value="90">TR +90</option><option value="33">FR +33</option><option value="31">NL +31</option><option value="49">DE +49</option><option value="352">LU +352</option><option value="44">UK +44</option><option value="39">IT +39</option><option value="34">ES +34</option><option value="212">MA +212</option></select><input id="guardianPhone" name="guardianPhone" type="tel" inputmode="numeric" autocomplete="tel-national" required aria-describedby="guardianPhoneError"></div><p class="field-error" id="guardianPhoneError"></p></div>
             <div class="field"><label for="guardianEmail"><span data-i18n="email">E-posta</span> <span aria-hidden="true">*</span></label><input id="guardianEmail" name="guardianEmail" type="email" inputmode="email" autocomplete="email" required aria-describedby="guardianEmailError"><p class="field-error" id="guardianEmailError"></p></div>
             <div class="field field-full"><label for="streetName"><span data-i18n="streetName">Cadde / sokak adı</span> <span aria-hidden="true">*</span></label><input id="streetName" name="streetName" autocomplete="address-line1" required aria-describedby="streetNameError"><p class="field-error" id="streetNameError"></p></div><div class="field"><label for="houseNumber"><span data-i18n="houseNumber">Kapı no</span> <span aria-hidden="true">*</span></label><input id="houseNumber" name="houseNumber" inputmode="numeric" autocomplete="off" maxlength="10" required aria-describedby="houseNumberError"><p class="field-error" id="houseNumberError"></p></div><div class="field"><label for="boxNumber"><span data-i18n="boxNumber">Kutu / daire</span> <small data-i18n="optional">İsteğe bağlı</small></label><input id="boxNumber" name="boxNumber" autocomplete="address-line2" maxlength="10" aria-describedby="boxNumberError"><p class="field-error" id="boxNumberError"></p></div>
-            <div class="field"><label for="postalCode"><span data-i18n="postalCode">Posta kodu</span> <span aria-hidden="true">*</span></label><input id="postalCode" name="postalCode" inputmode="numeric" autocomplete="postal-code" required aria-describedby="postalCodeError"><p class="field-error" id="postalCodeError"></p></div>
+            <div class="field"><label for="postalCode"><span data-i18n="postalCode">Posta kodu</span> <span aria-hidden="true">*</span></label><input id="postalCode" name="postalCode" inputmode="numeric" autocomplete="postal-code" required maxlength="5" aria-describedby="postalCodeError"><p class="field-error" id="postalCodeError"></p></div>
             <div class="field"><label for="city"><span data-i18n="city">Şehir</span> <span aria-hidden="true">*</span></label><input id="city" name="city" autocomplete="address-level2" required aria-describedby="cityError"><p class="field-error" id="cityError"></p></div>
           </div>
         </section>
@@ -300,10 +301,10 @@
           </div>
           <div class="scroll-status" id="contractScrollStatus"><span aria-hidden="true">↓</span><span data-i18n="contractScrollHint">Onaylamak için sözleşmenin sonuna kadar kaydırın</span></div>
           <label class="check-row contract-check is-disabled" id="contractCheckLabel">
-            <input type="checkbox" name="contractAccepted" id="contractAccepted" disabled required>
+            <input type="checkbox" name="contractAccepted" id="contractAccepted" disabled required aria-describedby="contractAcceptedError">
             <span><strong id="contractAcceptText" data-i18n="contractAccept">Okudum, anladım ve kabul ediyorum</strong></span>
           </label>
-          <p class="field-error section-error" id="contractAcceptedError"></p>
+          <p class="field-error section-error" id="contractAcceptedError" role="alert"></p>
         </section>
 
         <section class="step" data-step="6" aria-labelledby="declarationTitle" hidden>
@@ -312,7 +313,7 @@
             <h2 data-i18n="declarationLabel">Veli beyanı</h2>
             <p id="declarationText"></p>
             <dl class="declaration-meta">
-              <div><dt data-i18n="date">Tarih</dt><dd><input id="declarationDate" name="declarationDate" type="date" required aria-describedby="declarationDateError"><span class="field-error" id="declarationDateError"></span></dd></div>
+              <div><dt data-i18n="date">Tarih</dt><dd><input id="declarationDate" name="declarationDate" type="date" required aria-describedby="declarationDateError" min="2026-07-01" max="2027-06-30"><span class="field-error" id="declarationDateError"></span></dd></div>
               <div><dt data-i18n="signer">Velinin adı ve soyadı</dt><dd id="declarationSigner">—</dd></div>
             </dl>
           </article>
@@ -366,6 +367,7 @@
             <p class="tesekkur-ref-et" data-i18n="tesekkurRefEt">Kayıt numaranız</p>
             <p class="ref-number" id="refNumber"></p>
             <p class="tesekkur-not" data-i18n="tesekkurNot">Bu numarayı saklayınız. Dersler 5 Eylül 2026 Cumartesi günü başlıyor.</p>
+            <p class="field-uyari" id="tesekkurRefNotu" role="status" hidden></p>
             <button class="button button-primary button-wide tesekkur-kardes" type="button" id="tesekkurKardes" data-i18n="tesekkurKardes2">İkinci çocuğumu şimdi kaydet</button>
             <div class="tesekkur-eylem">
               <button class="button button-secondary" type="button" id="tesekkurIndir" data-i18n="downloadPdf">PDF'yi indir</button>
