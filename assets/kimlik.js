@@ -127,12 +127,15 @@
     return sonuc;
   }
 
-  /* En buyuk 4-komsulu bagli bileseni dondurur (yigin tabanli, ozyineleme yok). */
+  /* Bağlı bileşenler arasından en "kart gibi" olanı döndürür: dolu bir
+     dikdörtgen (dolgunluk ≥ 0,80) olan adayların en büyüğü. Yoksa en büyük. */
   function enBuyukBilesen(maske, en, boy) {
     const etiket = new Int32Array(en * boy).fill(-1);
     const yigin = new Int32Array(en * boy);
     let enIyi = null;
     let enIyiAdet = 0;
+    let enKart = null;
+    let enKartAdet = 0;
     let sira = 0;
     for (let bas = 0; bas < maske.length; bas += 1) {
       if (!maske[bas] || etiket[bas] >= 0) continue;
@@ -141,21 +144,34 @@
       etiket[bas] = sira;
       let adet = 0;
       const kendi = [];
+      let x0 = en, y0 = boy, x1 = 0, y1 = 0;
       while (ucu > 0) {
         const p = yigin[--ucu];
         adet += 1;
         kendi.push(p);
         const x = p % en;
         const y = (p / en) | 0;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
         if (x > 0 && maske[p - 1] && etiket[p - 1] < 0) { etiket[p - 1] = sira; yigin[ucu++] = p - 1; }
         if (x < en - 1 && maske[p + 1] && etiket[p + 1] < 0) { etiket[p + 1] = sira; yigin[ucu++] = p + 1; }
         if (y > 0 && maske[p - en] && etiket[p - en] < 0) { etiket[p - en] = sira; yigin[ucu++] = p - en; }
         if (y < boy - 1 && maske[p + en] && etiket[p + en] < 0) { etiket[p + en] = sira; yigin[ucu++] = p + en; }
       }
       if (adet > enIyiAdet) { enIyiAdet = adet; enIyi = kendi; }
+      const dolgunluk = adet / Math.max(1, (x1 - x0 + 1) * (y1 - y0 + 1));
+      const oran = (x1 - x0 + 1) / Math.max(1, y1 - y0 + 1);
+      // kart: dolu dikdörtgen, yatay (egiklik payiyla 1,1–2,4), anlamli buyuklukte
+      if (dolgunluk >= 0.80 && oran >= 1.1 && oran <= 2.4 && adet > enKartAdet && adet >= en * boy * 0.03) {
+        enKartAdet = adet;
+        enKart = kendi;
+      }
       sira += 1;
     }
-    return { pikseller: enIyi, adet: enIyiAdet };
+    if (enKart) return { pikseller: enKart, adet: enKartAdet, kartGibi: true };
+    return { pikseller: enIyi, adet: enIyiAdet, kartGibi: false };
   }
 
   /* Konveks kabuk icin her satirin yalniz en sol ve en sag pikseli yeter. */
@@ -278,13 +294,20 @@
 
       let maske = maskeCikar(veri, kestirim);
       const yaricap = Math.max(1, Math.round(analizEn * 0.012));
+      /* Sıra önemli: ÖNCE açma (aşındır→genişlet) ki ışık yansıması benekleri
+         karta köprülenmeden silinsin; SONRA kapama (genişlet→aşındır) ki
+         karttaki fotoğraf/yazı boşlukları dolsun. Tersi sırada benekler
+         kapama sırasında birbirine bağlanıp "kart" oluyordu. */
+      maske = morfoloji(maske, veri.en, veri.boy, 1, false);           // acma: asindir
+      maske = morfoloji(maske, veri.en, veri.boy, 1, true);            //       genislet
       maske = morfoloji(maske, veri.en, veri.boy, yaricap, true);      // kapama: genislet
-      maske = morfoloji(maske, veri.en, veri.boy, yaricap, false);     //         + asindir
-      maske = morfoloji(maske, veri.en, veri.boy, 1, false);           // acma: benekleri at
-      maske = morfoloji(maske, veri.en, veri.boy, 1, true);
+      maske = morfoloji(maske, veri.en, veri.boy, yaricap, false);     //         asindir
 
       const bilesen = enBuyukBilesen(maske, veri.en, veri.boy);
-      if (!bilesen.pikseller || bilesen.adet < veri.en * veri.boy * 0.03) return canvas;
+      if (!bilesen.pikseller || bilesen.adet < veri.en * veri.boy * 0.03) {
+        app.kartKirpSon = { red: 'bilesen kucuk', adet: bilesen.adet, esik: Math.round(veri.en * veri.boy * 0.03), sapma: Math.round(kestirim.sapma), zemin: kestirim.zemin };
+        return canvas;
+      }
 
       // eksene paralel sinir kutusu
       let x0 = veri.en, y0 = veri.boy, x1 = 0, y1 = 0;
@@ -296,6 +319,27 @@
         if (x > x1) x1 = x;
         if (y < y0) y0 = y;
         if (y > y1) y1 = y;
+      }
+
+      /* Bileşen kart gibi değilse (benek kümesiyle birleşmiş olabilir) kutuyu
+         doluluk profiliyle daralt: kartın satır/sütunlarında doluluk yüksek,
+         benek satırlarında düşüktür. Eşik %35. */
+      if (!bilesen.kartGibi) {
+        const satir = new Float32Array(veri.boy);
+        const sutun = new Float32Array(veri.en);
+        for (let i = 0; i < bilesen.pikseller.length; i += 1) {
+          const p = bilesen.pikseller[i];
+          satir[(p / veri.en) | 0] += 1;
+          sutun[p % veri.en] += 1;
+        }
+        const genislik = x1 - x0 + 1;
+        const yukseklik = y1 - y0 + 1;
+        let ny0 = y0, ny1 = y1, nx0 = x0, nx1 = x1;
+        while (ny0 < ny1 && satir[ny0] / genislik < 0.35) ny0 += 1;
+        while (ny1 > ny0 && satir[ny1] / genislik < 0.35) ny1 -= 1;
+        while (nx0 < nx1 && sutun[nx0] / yukseklik < 0.35) nx0 += 1;
+        while (nx1 > nx0 && sutun[nx1] / yukseklik < 0.35) nx1 -= 1;
+        if (ny1 - ny0 > 20 && nx1 - nx0 > 30) { x0 = nx0; x1 = nx1; y0 = ny0; y1 = ny1; }
       }
 
       // kartin kendi rengiyle disa dogru buyut (basilmamis beyaz kenar)
@@ -354,9 +398,9 @@
 
       // --- guvenlik kapilari ---
       const alanOrani = (g * b) / (canvas.width * canvas.height);
-      if (alanOrani < 0.05 || alanOrani > 0.99) return canvas;
+      if (alanOrani < 0.05 || alanOrani > 0.99) { app.kartKirpSon = { red: 'alan orani', alanOrani: Number(alanOrani.toFixed(3)), g: Math.round(g), b: Math.round(b) }; return canvas; }
       const oran = g / b;
-      if (oran < 1.15 || oran > 2.4) return canvas;               // karta benzemiyor
+      if (oran < 1.15 || oran > 2.4) { app.kartKirpSon = { red: 'oran', oran: Number(oran.toFixed(3)), g: Math.round(g), b: Math.round(b), aci: Number((aci * 180 / Math.PI).toFixed(1)) }; return canvas; }
 
       // ID-1 oranina oturt: makul yakinliktaysa kisa kenari acarak tam orana getir
       if (Math.abs(oran - ID1_ORANI) / ID1_ORANI <= 0.22) {

@@ -133,6 +133,31 @@
     return document.embedJpg(dataUrl);
   }
 
+  /* Görseli vesikalık oranında (3:4) ortadan kırpıp köşeleri yuvarlatır;
+     şeffaf köşeli PNG döner. Hedef kutudan biraz büyük çözünürlükte. */
+  async function yuvarlakVesikalik(document, dataUrl, genislikPt, yukseklikPt, yaricapPt) {
+    if (!dataUrl) return null;
+    const im = new Image();
+    await new Promise((c, r) => { im.onload = c; im.onerror = r; im.src = dataUrl; });
+    const olcek = 3;                                   // 3× punto → keskin baskı
+    const W = Math.round(genislikPt * olcek), H = Math.round(yukseklikPt * olcek), R = yaricapPt * olcek;
+    const cv = window.document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    // yuvarlak köşe maskesi
+    ctx.beginPath();
+    ctx.moveTo(R, 0); ctx.lineTo(W - R, 0); ctx.quadraticCurveTo(W, 0, W, R);
+    ctx.lineTo(W, H - R); ctx.quadraticCurveTo(W, H, W - R, H);
+    ctx.lineTo(R, H); ctx.quadraticCurveTo(0, H, 0, H - R);
+    ctx.lineTo(0, R); ctx.quadraticCurveTo(0, 0, R, 0); ctx.closePath();
+    ctx.clip();
+    // kapla (cover): oran koru, ortadan kırp
+    const k = Math.max(W / im.naturalWidth, H / im.naturalHeight);
+    const dw = im.naturalWidth * k, dh = im.naturalHeight * k;
+    ctx.drawImage(im, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    return document.embedPng(cv.toDataURL('image/png'));
+  }
+
   function drawImageContained(page, image, x, y, width, height) {
     const scale = Math.min(width / image.width, height / image.height);
     const dw = image.width * scale;
@@ -205,8 +230,10 @@
     const baslik = fr ? 'FORMULAIRE D’INSCRIPTION' : 'ÖĞRENCİ KAYIT FORMU';
     const bw = fonts.bold.widthOfTextAtSize(baslik, 17);
     page.drawText(baslik, { x: MARGIN + (INNER - photoW - bw) / 2, y: y - headH / 2 - 6, size: 17, font: fonts.bold, color: INK });
-    const foto = await embedDataImage(document, app.state.images.studentPhoto);
-    if (foto) drawImageContained(page, foto, MARGIN + INNER - photoW + 6, y - headH + 6, photoW - 12, headH - 12);
+    // vesikalık: 3:4 oranında, yuvarlak köşeli, kutunun içine ortalanmış
+    const fH = headH - 14, fW = Math.round(fH * 3 / 4);
+    const foto = await yuvarlakVesikalik(document, app.state.images.studentPhoto, fW, fH, 6);
+    if (foto) page.drawImage(foto, { x: MARGIN + INNER - photoW + (photoW - fW) / 2, y: y - headH + 7, width: fW, height: fH });
     else {
       const ft = fr ? 'Photo' : 'Fotoğraf';
       page.drawText(ft, { x: MARGIN + INNER - photoW + (photoW - fonts.regular.widthOfTextAtSize(ft, 10)) / 2, y: y - headH / 2 - 4, size: 10, font: fonts.regular, color: INK });
