@@ -57,11 +57,6 @@ Base64 betiği, aynı DejaVuSans.ttf dosyasının byte-for-byte Base64 temsilidi
 ayrı bir eser veya farklı lisanslı font değildir.
 
 --------------------------------------------------------------------
-tesseract.js 5.1.1 · tesseract.js-core (Apache-2.0)
-  https://github.com/naptha/tesseract.js
-  vendor/tesseract/tesseract.min.js, worker.min.js, core/*.wasm.js
-Tesseract OCR eng.traineddata (Apache-2.0) — tessdata_fast 4.0.0
-  https://github.com/tesseract-ocr/tessdata_fast
-  vendor/tesseract/eng.traineddata.gz
-Yalnizca kimlik karti MRZ satirlarini okumak icin, kullanici dugmeye
-bastiginda tarayiciya yuklenir; goruntu cihazdan disari cikmaz.
+Lora (Regular, Bold) — SIL Open Font License 1.1 · Cyreal
+  vendor/Lora-Regular.ttf, vendor/Lora-Bold.ttf, vendor/Lora.base64.js
+  Kayit belgesinin (PDF) yazi tipi. DejaVu Sans'in yerini aldi.
